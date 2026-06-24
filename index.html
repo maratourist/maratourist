@@ -923,6 +923,141 @@
     margin-top: 4px;
   }
 
+  /* ── CITY TRAVEL GUIDE ── */
+  .city-hero {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, #1162d6, #0d4ba8);
+    box-shadow: var(--shadow-hover);
+  }
+  .city-hero-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .city-hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.1) 60%);
+    display: flex; flex-direction: column;
+    justify-content: flex-end;
+    padding: 28px 32px;
+  }
+  .city-hero-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 42px; font-weight: 800;
+    color: white; line-height: 1;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .city-hero-sub {
+    font-size: 15px; color: rgba(255,255,255,0.85);
+    margin-top: 6px; display: flex; align-items: center; gap: 10px;
+  }
+  .city-quick-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .city-qs-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .city-qs-icon { font-size: 22px; margin-bottom: 6px; }
+  .city-qs-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 26px; font-weight: 700; line-height: 1;
+  }
+  .city-qs-val .done { color: var(--green); }
+  .city-qs-val .sep  { color: var(--muted); font-weight: 400; font-size: 18px; margin: 0 2px; }
+  .city-qs-val .total { color: var(--text); }
+  .city-qs-label {
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-top: 5px;
+  }
+  .city-progress-bar {
+    height: 5px; background: var(--border); border-radius: 99px;
+    margin-top: 8px; overflow: hidden;
+  }
+  .city-progress-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.6s ease;
+  }
+
+  /* Tourism table */
+  .tourism-section { margin-bottom: 32px; }
+  .tourism-section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tourism-section-icon { font-size: 20px; }
+  .tourism-section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px; font-weight: 700; color: var(--text);
+  }
+  .tourism-section-count {
+    font-size: 12px; color: var(--muted);
+    background: var(--bg); padding: 2px 8px;
+    border-radius: 99px; border: 1px solid var(--border);
+  }
+  .tourism-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--card); border-radius: 10px;
+    overflow: hidden; box-shadow: var(--shadow);
+    font-size: 14px;
+  }
+  .tourism-table th {
+    background: var(--bg); color: var(--muted);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    padding: 10px 14px; text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+  .tourism-table td {
+    padding: 11px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .tourism-table tbody tr:last-child td { border-bottom: none; }
+  .tourism-table tbody tr:hover { background: var(--bg); cursor: pointer; }
+  .t-status-done    { color: var(--green); font-size: 16px; }
+  .t-status-pending { color: #d03030; font-size: 16px; }
+  .t-stars { color: #f59e0b; letter-spacing: 1px; font-size: 13px; }
+  .t-name { font-weight: 600; }
+  .t-date { font-size: 12px; color: var(--muted); }
+  .t-link a { color: var(--blue); font-size: 12px; }
+  .t-note { font-size: 12px; color: var(--muted); font-style: italic; }
+  .add-tourism-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; font-size: 13px; font-weight: 600;
+    background: var(--card); color: var(--blue);
+    border: 1.5px dashed var(--blue); border-radius: 8px;
+    cursor: pointer; margin-top: 10px;
+    transition: all 0.15s;
+  }
+  .add-tourism-btn:hover { background: var(--blue-pale); }
+  .city-section-tabs {
+    display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .city-tab {
+    padding: 8px 18px; border-radius: 99px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--card);
+    color: var(--muted); transition: all 0.15s;
+  }
+  .city-tab.active { background: var(--blue); color: white; border-color: var(--blue); }
+  .city-tab:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
+
   .pk-filters {
     display: flex;
     gap: 10px;
@@ -1068,16 +1203,37 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const tourismMeta = {
-  hotels:      { icon: "🏨", name: "Hotels" },
-  beaches:     { icon: "🏖️", name: "Beaches" },
-  mountains:   { icon: "⛰️", name: "Mountains" },
-  cafes:       { icon: "☕", name: "Cafés" },
-  libraries:   { icon: "📚", name: "Libraries" },
-  museums:     { icon: "🖼️", name: "Museums" },
-  parks:       { icon: "🌳", name: "Parks" },
-  pubs:        { icon: "🍺", name: "Pubs" },
-  restaurants: { icon: "🍽️", name: "Restaurants" }
+  hotels:         { icon: "🏨", name: "Hotels" },
+  beaches:        { icon: "🏖️", name: "Beaches" },
+  parks:          { icon: "🌳", name: "Parks" },
+  libraries:      { icon: "📚", name: "Libraries" },
+  restaurants:    { icon: "🍽️", name: "Restaurants" },
+  museums:        { icon: "🏛️", name: "Museums" },
+  shoppings:      { icon: "🛍️", name: "Shoppings" },
+  entertainment:  { icon: "🎭", name: "Entertainment" },
+  mountains:      { icon: "⛰️", name: "Mountains" },
+  cafes:          { icon: "☕", name: "Cafes" },
+  landmarks:      { icon: "🗿", name: "Landmarks" },
+  religious_sites:{ icon: "⛪", name: "Religious Sites" },
+  viewpoints:     { icon: "🌅", name: "Viewpoints" },
+  wildlife_parks: { icon: "🦘", name: "Wildlife Parks" },
+  amusement_parks:{ icon: "🎢", name: "Amusement Parks" },
+  other:          { icon: "✈️", name: "Other" }
 };
+
+const UNSPLASH_KEY = 'MoYBf5Oayqwvbsb7Ju6LnFP78LbE3XLX-h63yowBS0Q';
+
+async function fetchCityPhoto(cityName, countryName) {
+  try {
+    const q = encodeURIComponent(cityName + ' ' + countryName + ' city');
+    const r = await fetch('https://api.unsplash.com/search/photos?query=' + q + '&per_page=1&orientation=landscape', {
+      headers: { Authorization: 'Client-ID ' + UNSPLASH_KEY }
+    });
+    const data = await r.json();
+    if (data.results && data.results.length > 0) return data.results[0].urls.regular;
+  } catch(e) {}
+  return null;
+}
 
 // ── STATE ──
 let state = { region: null, country: null, city: null, category: null, sub: null, parkrunLocation: null, globalView: null };
@@ -1691,52 +1847,92 @@ async function render() {
   const activities = await loadActivities(city.id);
   const tourism = await loadTourism(city.id);
 
-  // LEVEL 3: CITY → Half Marathons / Parkruns / Tourism (direct, no intermediate "Activities" step)
+  // LEVEL 3: CITY — Travel guide dashboard
   if (state.category === null) {
     updateBreadcrumb({ country, city });
-    const halfMarathons = activities.filter(a => a.type === 'half_marathon');
-    main.innerHTML = `
-      <div class="back-btn" onclick="go('country',${state.country})">‹ Back to ${country.name}</div>
-      <div class="page-header">
-        <div class="page-title">📍 ${city.name}</div>
-        <div class="page-subtitle">${country.flag_emoji} ${country.name}</div>
-      </div>
-      <div class="category-grid" style="grid-template-columns: repeat(3, 1fr); max-width: 900px">
-        <div class="category-card" onclick="goDirectRun('half_marathon')">
-          <div class="category-icon">🏅</div>
-          <div class="category-name">Half Marathons</div>
-          <div class="category-count">${halfMarathons.length} logged</div>
+
+    const cs = cityStats[city.id] || { hm: 0, hmTotal: 0, pk: 0, pkTotal: 0, tourism: 0 };
+    const totalVisited = tourism.filter(t => t.visit_date).length;
+    const totalTourism = tourism.length;
+
+    // Fetch city photo from Unsplash async
+    main.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted);">Loading...</div>';
+
+    fetchCityPhoto(city.name, country.name).then(photoUrl => {
+      const heroHTML = photoUrl
+        ? `<img class="city-hero-img" src="${photoUrl}" alt="${city.name}" loading="lazy">`
+        : `<div style="width:100%;height:100%;background:linear-gradient(135deg,var(--blue),#0d4ba8);"></div>`;
+
+      const popFormatted = city.population ? city.population.toLocaleString() : null;
+
+      // Quick stats
+      function qsBox(icon, done, total, label, color) {
+        const pct = total > 0 ? (done/total*100) : 0;
+        return `<div class="city-qs-box">
+          <div class="city-qs-icon">${icon}</div>
+          <div class="city-qs-val">
+            <span class="done" style="color:${color};">${done}</span>
+            <span class="sep">/</span>
+            <span class="total">${total}</span>
+          </div>
+          <div class="city-qs-label">${label}</div>
+          <div class="city-progress-bar">
+            <div class="city-progress-fill" style="width:${pct}%;background:${color};"></div>
+          </div>
+        </div>`;
+      }
+
+      // Tourism by category summary
+      const catSummary = Object.entries(tourismMeta).map(([key, meta]) => {
+        const entries = tourism.filter(t => t.category === key);
+        if (entries.length === 0) return '';
+        const visited = entries.filter(t => t.visit_date).length;
+        return `<span style="font-size:13px;color:var(--muted);cursor:pointer;" onclick="showCityTab('tourism')" title="${meta.name}">
+          ${meta.icon} <b style="color:var(--text);">${visited}/${entries.length}</b>
+        </span>`;
+      }).filter(Boolean).join('');
+
+      main.innerHTML = `
+        <div class="back-btn" onclick="go('country',${state.country})">‹ Back to ${country.name}</div>
+
+        <div class="city-hero">
+          ${heroHTML}
+          <div class="city-hero-overlay">
+            <div class="city-hero-name">${city.name}</div>
+            <div class="city-hero-sub">
+              ${country.flag_emoji} ${country.name}
+              ${city.state ? `<span style="opacity:0.6;">·</span> ${city.state}` : ''}
+              ${popFormatted ? `<span style="opacity:0.6;">·</span> 👥 ${popFormatted}` : ''}
+            </div>
+          </div>
         </div>
-        <div class="category-card" onclick="goDirectRun('parkrun')">
-          <div class="category-icon">🏃</div>
-          <div class="category-name">Parkruns</div>
-          <div class="category-count">${(cityStats[city.id] || {pk:0}).pk} logged</div>
+
+        <div class="city-quick-stats">
+          ${qsBox('🏅', cs.hm, cs.hmTotal, 'Half Marathons', 'var(--run)')}
+          ${qsBox('🏃', cs.pk, cs.pkTotal, 'Parkruns', 'var(--parkrun)')}
+          ${qsBox('🧭', totalVisited, totalTourism || 1, 'Places Visited', 'var(--green)')}
         </div>
-        <div class="category-card" onclick="go('category','tourism')">
-          <div class="category-icon">🧭</div>
-          <div class="category-name">Tourism</div>
-          <div class="category-count">${tourism.length} logged</div>
+
+        <div class="city-section-tabs">
+          <div class="city-tab active" id="tab-overview" onclick="showCityTab('overview')">🗺️ Overview</div>
+          <div class="city-tab" id="tab-halfmarathons" onclick="showCityTab('halfmarathons')">🏅 Half Marathons</div>
+          <div class="city-tab" id="tab-parkruns" onclick="showCityTab('parkruns')">🏃 Parkruns</div>
+          <div class="city-tab" id="tab-tourism" onclick="showCityTab('tourism')">🧭 Tourism</div>
         </div>
-      </div>`;
+
+        <div id="city-tab-content"></div>
+      `;
+
+      // Render tab content
+      window._cityTabData = { city, country, tourism, cs, activities };
+      showCityTab('overview');
+    });
     return;
   }
 
-  // LEVEL 4: TOURISM CATEGORY → subcategory grid (Half Marathons/Parkruns skip this, handled above)
-  if (state.sub === null) {
-    updateBreadcrumb({ country, city });
-    main.innerHTML = `
-      <div class="back-btn" onclick="go('city',${state.city})">‹ Back to ${city.name}</div>
-      <div class="page-header">
-        <div class="page-title">🧭 Tourism — ${city.name}</div>
-      </div>
-      <div class="subcat-grid">
-        ${Object.entries(tourismMeta).map(([key, meta]) => `
-          <div class="subcat-card" onclick="go('sub','${key}')">
-            <div class="subcat-icon">${meta.icon}</div>
-            <div class="subcat-name">${meta.name}</div>
-            <div class="subcat-count">${tourism.filter(t => t.category === key).length} logged</div>
-          </div>`).join('')}
-      </div>`;
+  // LEVEL 4: redirect to city tab view
+  if (state.sub === null && state.category === 'tourism') {
+    go('city', state.city);
     return;
   }
 
@@ -1811,6 +2007,355 @@ async function render() {
           </div>`).join('')}
       </div>`}
   `;
+}
+
+
+// ════════════════════════════════════════
+// CITY TRAVEL GUIDE — TAB RENDERING
+// ════════════════════════════════════════
+
+function showCityTab(tab) {
+  // Update tab active state
+  ['overview','halfmarathons','parkruns','tourism'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.classList.toggle('active', t === tab);
+  });
+
+  const container = document.getElementById('city-tab-content');
+  if (!container) return;
+  const { city, country, tourism, cs, activities } = window._cityTabData || {};
+  if (!city) return;
+
+  if (tab === 'overview') {
+    // Summary of all categories with counts
+    const catRows = Object.entries(tourismMeta).map(([key, meta]) => {
+      const entries = tourism.filter(t => t.category === key);
+      if (entries.length === 0) return '';
+      const visited = entries.filter(t => t.visit_date).length;
+      const stars = entries.filter(t => t.rating).map(t => parseFloat(t.rating));
+      const avgRating = stars.length > 0 ? (stars.reduce((a,b)=>a+b,0)/stars.length).toFixed(1) : null;
+      return `<tr onclick="showCityTab('tourism')" style="cursor:pointer;">
+        <td style="padding:10px 14px;font-size:18px;">${meta.icon}</td>
+        <td style="padding:10px 14px;font-weight:600;">${meta.name}</td>
+        <td style="padding:10px 14px;text-align:center;color:var(--green);font-weight:700;">${visited}</td>
+        <td style="padding:10px 14px;text-align:center;color:var(--muted);">${entries.length - visited}</td>
+        <td style="padding:10px 14px;text-align:center;">${avgRating ? '⭐ ' + avgRating : '—'}</td>
+      </tr>`;
+    }).filter(Boolean).join('');
+
+    container.innerHTML = catRows
+      ? `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="background:var(--bg);">
+              <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);"></th>
+              <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);">Category</th>
+              <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);">Visited</th>
+              <th style="padding:10px 14px;text-align:center;font-size:11px;color:#d03030;text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);">Pending</th>
+              <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);">Avg Rating</th>
+            </tr></thead>
+            <tbody>${catRows}</tbody>
+          </table>
+        </div>`
+      : `<div class="empty-state"><div class="es-icon">🧭</div><div class="es-text">No tourism entries yet. Add places in the Tourism tab!</div></div>`;
+    return;
+  }
+
+  if (tab === 'halfmarathons') {
+    container.innerHTML = `
+      <div class="action-btn-row">
+        <button class="action-btn" style="background:var(--run);" onclick="openHalfMarathonRaceForm(${city.id})">+ Add Race</button>
+      </div>
+      <div id="hm-table-container">Loading...</div>`;
+    renderHalfMarathonTable({ cityId: city.id });
+    return;
+  }
+
+  if (tab === 'parkruns') {
+    container.innerHTML = `
+      <div class="action-btn-row">
+        <button class="action-btn" onclick="openParkrunLocationForm(${city.id})">+ Add Parkrun Location</button>
+      </div>
+      <div id="pk-table-container">Loading...</div>`;
+    renderParkrunTable({ cityId: city.id });
+    return;
+  }
+
+  if (tab === 'tourism') {
+    renderTourismTab(city, tourism);
+    return;
+  }
+}
+
+function starsHTML(rating) {
+  if (!rating) return '—';
+  const n = Math.round(parseFloat(rating));
+  return '⭐'.repeat(n) + '☆'.repeat(Math.max(0, 5-n));
+}
+
+function renderTourismTab(city, tourism) {
+  const container = document.getElementById('city-tab-content');
+  if (!container) return;
+
+  let html = `<div class="action-btn-row" style="margin-bottom:20px;">
+    <button class="action-btn" onclick="openTourismForm(${city.id})">+ Add Place</button>
+  </div>`;
+
+  const hasTourism = Object.entries(tourismMeta).some(([key]) => tourism.filter(t => t.category === key).length > 0);
+
+  if (!hasTourism) {
+    html += `<div class="empty-state"><div class="es-icon">🧭</div><div class="es-text">No places logged yet for ${city.name}.<br>Click "+ Add Place" to start!</div></div>`;
+    container.innerHTML = html;
+    return;
+  }
+
+  Object.entries(tourismMeta).forEach(([key, meta]) => {
+    const entries = tourism.filter(t => t.category === key);
+    if (entries.length === 0) return;
+    const visited = entries.filter(t => t.visit_date).length;
+
+    const rows = entries.map(e => {
+      const isVisited = !!e.visit_date;
+      return `<tr>
+        <td style="padding:10px 14px;text-align:center;width:40px;">
+          <span class="${isVisited ? 't-status-done' : 't-status-pending'}">${isVisited ? '✓' : '○'}</span>
+        </td>
+        <td style="padding:10px 14px;">
+          <div class="t-name">${e.name}</div>
+          ${e.notes ? `<div class="t-note">${e.notes}</div>` : ''}
+        </td>
+        <td style="padding:10px 14px;white-space:nowrap;" class="t-stars">${starsHTML(e.rating)}</td>
+        <td style="padding:10px 14px;" class="t-date">${e.visit_date ? formatDate(e.visit_date) : '—'}</td>
+        <td style="padding:10px 14px;" class="t-link">${e.link ? `<a href="${e.link}" target="_blank">🔗 Link</a>` : '—'}</td>
+        <td style="padding:10px 14px;text-align:center;">
+          <button onclick="openTourismEditForm(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;">✏️</button>
+          <button onclick="deleteTourismEntry(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:#d03030;font-size:14px;">🗑</button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    html += `<div class="tourism-section">
+      <div class="tourism-section-header">
+        <span class="tourism-section-icon">${meta.icon}</span>
+        <span class="tourism-section-title">${meta.name}</span>
+        <span class="tourism-section-count">${visited}/${entries.length} visited</span>
+      </div>
+      <table class="tourism-table">
+        <thead><tr>
+          <th style="width:40px;text-align:center;"></th>
+          <th>Name</th>
+          <th>Rating</th>
+          <th>Date Visited</th>
+          <th>Link</th>
+          <th style="width:80px;"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+// ════════════════════════════════════════
+// TOURISM FORM — ADD / EDIT
+// ════════════════════════════════════════
+function openTourismForm(cityId, prefillCat) {
+  const catOptions = Object.entries(tourismMeta).map(([key, meta]) =>
+    `<option value="${key}" ${prefillCat===key?'selected':''}>${meta.icon} ${meta.name}</option>`
+  ).join('');
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🧭 Add Place</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="tourism-form-error"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-input" id="t-category">${catOptions}</select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-input" id="t-status">
+            <option value="pending">○ Not visited yet</option>
+            <option value="visited">✓ Already visited</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="t-name" placeholder="e.g. South Bank Parklands" autofocus>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date Visited <span class="optional">(optional)</span></label>
+          <input class="form-input" id="t-date" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rating <span class="optional">(1–5 ⭐)</span></label>
+          <select class="form-input" id="t-rating">
+            <option value="">—</option>
+            <option value="1">⭐</option>
+            <option value="2">⭐⭐</option>
+            <option value="3">⭐⭐⭐</option>
+            <option value="4">⭐⭐⭐⭐</option>
+            <option value="5">⭐⭐⭐⭐⭐</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes <span class="optional">(optional)</span></label>
+        <input class="form-input" id="t-notes" placeholder="Your thoughts...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link <span class="optional">(optional)</span></label>
+        <input class="form-input" id="t-link" placeholder="https://...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="tourism-save-btn" onclick="submitTourismForm(${cityId})">Save Place</button>
+    </div>
+  `);
+
+  // Auto-fill date if visited
+  document.getElementById('t-status').addEventListener('change', function() {
+    if (this.value === 'visited' && !document.getElementById('t-date').value) {
+      document.getElementById('t-date').value = new Date().toISOString().split('T')[0];
+    }
+  });
+}
+
+async function submitTourismForm(cityId) {
+  const name = document.getElementById('t-name').value.trim();
+  const category = document.getElementById('t-category').value;
+  const status = document.getElementById('t-status').value;
+  const date = document.getElementById('t-date').value || null;
+  const rating = document.getElementById('t-rating').value || null;
+  const notes = document.getElementById('t-notes').value.trim() || null;
+  const link = document.getElementById('t-link').value.trim() || null;
+  const errorEl = document.getElementById('tourism-form-error');
+  const btn = document.getElementById('tourism-save-btn');
+
+  if (!name) { errorEl.innerHTML = '<div class="form-error">Name is required.</div>'; return; }
+
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const { error } = await sb.from('tourism_entries').insert({
+    city_id: cityId, name, category,
+    visit_date: status === 'visited' ? (date || new Date().toISOString().split('T')[0]) : date,
+    rating, notes, link
+  });
+
+  if (error) {
+    errorEl.innerHTML = '<div class="form-error">Error: ' + error.message + '</div>';
+    btn.disabled = false; btn.textContent = 'Save Place'; return;
+  }
+
+  delete tourismCache[cityId];
+  statsLoaded = false;
+  closeModal();
+  // Refresh the tourism tab
+  const freshTourism = await loadTourism(cityId);
+  if (window._cityTabData) window._cityTabData.tourism = freshTourism;
+  renderTourismTab({ id: cityId, name: window._cityTabData?.city?.name || '' }, freshTourism);
+  loadHeaderStats();
+}
+
+async function openTourismEditForm(entryId, cityId) {
+  const { data: e } = await sb.from('tourism_entries').select('*').eq('id', entryId).single();
+  if (!e) return;
+
+  const catOptions = Object.entries(tourismMeta).map(([key, meta]) =>
+    `<option value="${key}" ${e.category===key?'selected':''}>${meta.icon} ${meta.name}</option>`
+  ).join('');
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">✏️ Edit Place</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="tourism-edit-error"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-input" id="te-category">${catOptions}</select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="te-name" value="${e.name}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date Visited</label>
+          <input class="form-input" id="te-date" type="date" value="${e.visit_date || ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rating</label>
+          <select class="form-input" id="te-rating">
+            <option value="">—</option>
+            ${[1,2,3,4,5].map(n => `<option value="${n}" ${e.rating==n?'selected':''}>${'⭐'.repeat(n)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input class="form-input" id="te-notes" value="${e.notes || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link</label>
+        <input class="form-input" id="te-link" value="${e.link || ''}">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="tourism-edit-btn" onclick="submitTourismEditForm(${entryId}, ${cityId})">Save Changes</button>
+    </div>
+  `);
+}
+
+async function submitTourismEditForm(entryId, cityId) {
+  const name = document.getElementById('te-name').value.trim();
+  const errorEl = document.getElementById('tourism-edit-error');
+  const btn = document.getElementById('tourism-edit-btn');
+  if (!name) { errorEl.innerHTML = '<div class="form-error">Name is required.</div>'; return; }
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const { error } = await sb.from('tourism_entries').update({
+    name,
+    category: document.getElementById('te-category').value,
+    visit_date: document.getElementById('te-date').value || null,
+    rating: document.getElementById('te-rating').value || null,
+    notes: document.getElementById('te-notes').value.trim() || null,
+    link: document.getElementById('te-link').value.trim() || null,
+  }).eq('id', entryId);
+
+  if (error) {
+    errorEl.innerHTML = '<div class="form-error">Error: ' + error.message + '</div>';
+    btn.disabled = false; btn.textContent = 'Save Changes'; return;
+  }
+
+  delete tourismCache[cityId];
+  statsLoaded = false;
+  closeModal();
+  const freshTourism = await loadTourism(cityId);
+  if (window._cityTabData) window._cityTabData.tourism = freshTourism;
+  renderTourismTab({ id: cityId }, freshTourism);
+}
+
+async function deleteTourismEntry(entryId, cityId) {
+  if (!confirm('Delete this place?')) return;
+  await sb.from('tourism_entries').delete().eq('id', entryId);
+  delete tourismCache[cityId];
+  statsLoaded = false;
+  const freshTourism = await loadTourism(cityId);
+  if (window._cityTabData) window._cityTabData.tourism = freshTourism;
+  renderTourismTab({ id: cityId }, freshTourism);
+  loadHeaderStats();
 }
 
 // ════════════════════════════════════════
