@@ -1,0 +1,3375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maratourist</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:       #1162d6;
+    --blue-dark:  #0d4ba8;
+    --blue-pale:  #eaf1fc;
+    --bg:         #f4f6f9;
+    --card:       #ffffff;
+    --border:     #dde3ec;
+    --text:       #1c2733;
+    --muted:      #6b7785;
+    --run:        #e2622e;
+    --parkrun:    #7c5cd6;
+    --travel:     #1162d6;
+    --green:      #1a9c6b;
+    --shadow:     0 1px 3px rgba(20,30,50,0.06), 0 1px 2px rgba(20,30,50,0.04);
+    --shadow-hover: 0 6px 18px rgba(20,30,50,0.10), 0 2px 6px rgba(20,30,50,0.06);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 16px 40px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .logo-icon {
+    font-size: 28px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+  }
+  .logo-wordmark {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .logo-name {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    background: linear-gradient(135deg, #e8541a, #c73a0a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .logo-sub {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: none;
+    letter-spacing: 0.1px;
+    font-family: 'Inter', sans-serif;
+    -webkit-text-fill-color: var(--muted);
+  }
+  .logo span { color: var(--blue); }
+
+  .header-stats {
+    display: flex;
+    gap: 28px;
+    justify-self: center;
+  }
+  .hstat { text-align: center; min-width: 100px; }
+
+  .hstat-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 3px;
+    line-height: 1;
+  }
+  .hstat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .hstat-done {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+  }
+  .hstat-pend {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #d03030;
+  }
+  .hstat-sep {
+    font-size: 15px;
+    color: var(--border);
+    font-weight: 400;
+  }
+  .hstat-pct {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--blue);
+    margin-top: 3px;
+  }
+  .hstat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  /* ── BREADCRUMB ── */
+  .breadcrumb {
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .breadcrumb span { color: var(--blue); cursor: pointer; font-weight: 500; }
+  .breadcrumb span:hover { text-decoration: underline; }
+  .breadcrumb .current { color: var(--text); font-weight: 600; }
+  .breadcrumb .sep { color: #b8c1cf; }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    padding: 32px 40px 60px;
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: 28px;
+  }
+  .page-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .page-subtitle {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    margin-bottom: 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--blue);
+    transition: all 0.15s;
+  }
+  .back-btn:hover { background: var(--blue-pale); border-color: var(--blue); }
+
+  /* ── REGION GRID (world view) ── */
+  .region-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .region-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .region-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+    border-color: var(--blue);
+  }
+  .region-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 4px;
+    background: var(--accent-color, var(--blue));
+  }
+
+  .region-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .region-emoji { font-size: 32px; }
+  .visited-badge {
+    background: var(--blue-pale);
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .region-card-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .region-card-meta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .region-card-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* ── COUNTRY / generic square grid ── */
+  .square-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+  }
+
+  .square-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+    box-shadow: var(--shadow);
+  }
+  .square-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+    border-color: var(--blue);
+  }
+
+  .square-flag {
+    font-size: 36px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .square-flag-img-wrap {
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+  }
+  .square-flag-img {
+    width: 72px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 5px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    display: block;
+  }
+  .square-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .square-count {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .tag {
+    font-size: 13px;
+    padding: 3px 9px;
+    border-radius: 5px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .tag-run    { background: #fdf0e9; color: var(--run); }
+  .tag-park   { background: #f1edfb; color: var(--parkrun); }
+  .tag-travel { background: var(--blue-pale); color: var(--travel); }
+
+  /* ── CITY CARD ── */
+  .city-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: var(--shadow);
+  }
+  .city-card:hover {
+    box-shadow: var(--shadow-hover);
+    border-color: var(--blue);
+  }
+  .city-card-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .city-card-stats {
+    display: flex;
+    gap: 14px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .city-card-stat { display: flex; align-items: center; gap: 5px; }
+
+  .city-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  /* ── CATEGORY (Activities / Tourism) ── */
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    max-width: 700px;
+  }
+  .category-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 36px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow);
+  }
+  .category-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+    border-color: var(--blue);
+  }
+  .category-icon { font-size: 48px; margin-bottom: 14px; }
+  .category-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .category-count { font-size: 13px; color: var(--muted); }
+
+  /* ── SUBCATEGORY GRID (Half Marathons/Parkruns or Hotels/Beaches/etc) ── */
+  .subcat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 16px;
+  }
+  .subcat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: var(--shadow);
+  }
+  .subcat-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+    border-color: var(--blue);
+  }
+  .subcat-icon { font-size: 30px; margin-bottom: 10px; }
+  .subcat-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .subcat-count { font-size: 11.5px; color: var(--muted); }
+
+  /* ── ENTRY LIST (final level: actual logged items) ── */
+  .entry-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .entry-row {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow);
+  }
+  .entry-icon { font-size: 22px; }
+  .entry-info { flex: 1; }
+  .entry-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 2px;
+  }
+  .entry-date { font-size: 12px; color: var(--muted); }
+  .entry-result {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--blue);
+  }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+  .empty-state .es-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state .es-text { font-size: 14px; line-height: 1.6; }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 28px 0 14px;
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  /* ── ACTION BUTTON (contextual + Add) ── */
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Barlow', sans-serif;
+    transition: all 0.15s;
+    margin-bottom: 18px;
+  }
+  .action-btn:hover { background: var(--blue-dark); }
+  .action-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .action-btn-secondary {
+    background: var(--card);
+    color: var(--blue);
+    border: 1px solid var(--border);
+  }
+  .action-btn-secondary:hover { background: var(--blue-pale); border-color: var(--blue); }
+
+  .hero-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 36px;
+    background: var(--card);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 17px;
+    font-weight: 700;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.3px;
+    box-shadow: var(--shadow);
+    transition: all 0.18s;
+  }
+  .hero-cta-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--blue);
+    color: var(--blue);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .add-result-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: var(--blue-pale);
+    color: var(--blue);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Barlow', sans-serif;
+    transition: all 0.15s;
+  }
+  .add-result-btn:hover { background: var(--blue); color: white; }
+
+  /* ── MODAL / FORM OVERLAY ── */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(20,30,50,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  .modal-box {
+    background: var(--card);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(20,30,50,0.25);
+    margin: auto;
+  }
+
+  .modal-header {
+    padding: 22px 26px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--card);
+    border-radius: 12px 12px 0 0;
+  }
+  .modal-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--muted);
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .modal-body {
+    padding: 22px 26px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .form-row-5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .form-label .optional {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 11.5px;
+  }
+
+  .form-input, .form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-family: 'Barlow', sans-serif;
+    color: var(--text);
+    background: var(--card);
+    transition: border-color 0.15s;
+  }
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+
+  .form-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 22px 0 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .form-section-title:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+  .modal-footer {
+    padding: 18px 26px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    position: sticky;
+    bottom: 0;
+    background: var(--card);
+    border-radius: 0 0 12px 12px;
+  }
+
+  .btn-primary {
+    padding: 10px 20px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Barlow', sans-serif;
+  }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .btn-cancel {
+    padding: 10px 20px;
+    background: var(--card);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Barlow', sans-serif;
+  }
+  .btn-cancel:hover { background: var(--bg); }
+
+  .form-error {
+    background: #fdeeee;
+    color: #b3261e;
+    padding: 10px 14px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+
+  .location-card-row {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: var(--shadow);
+  }
+  .location-card-info { cursor: pointer; flex: 1; }
+  .location-card-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 2px;
+  }
+  .location-card-meta { font-size: 11.5px; color: var(--muted); }
+
+  /* ── PARKRUN RANKING TABLE (WCA-style) ── */
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: auto;
+    max-height: 560px;
+    box-shadow: var(--shadow);
+  }
+  .pk-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: auto;
+  }
+  .pk-table th {
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 12px 14px;
+    text-align: center;
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .pk-table th:nth-child(2),
+  .pk-table th.pk-th-left {
+    text-align: left;
+  }
+  .pk-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .pk-table td.pk-name, .pk-table td.pk-cityname {
+    text-align: left;
+    min-width: 160px;
+  }
+  .pk-table td.pk-state {
+    text-align: center;
+    min-width: 60px;
+    max-width: 70px;
+  }
+  .pk-table tbody tr:last-child td { border-bottom: none; }
+  .pk-table tbody tr.pk-done {
+    background: #eef9f1;
+  }
+  .pk-table tbody tr.pk-done:hover { background: #e2f5e8; }
+  .pk-table tbody tr.pk-pending {
+    background: #fff5f5;
+    color: #a03030;
+  }
+  .pk-table tbody tr.pk-pending:hover { background: #ffe8e8; }
+  .pk-table tbody tr { cursor: pointer; transition: background 0.12s; }
+  .pk-table td.pk-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .pk-table td.pk-time {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--blue);
+  }
+  .pk-table tr.pk-pending td.pk-time { color: var(--muted); font-weight: 400; }
+  .pk-table td.pk-km-fast { color: #0d8a4f !important; font-weight: 700 !important; }
+  .pk-table td.pk-km-slow { color: #d6342c !important; font-weight: 700 !important; }
+  .pk-status-dot {
+    display: inline-block;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+  }
+  .pk-status-done { background: var(--green); }
+  .pk-status-pending { background: #d03030; }
+  .pk-add-inline {
+    font-size: 12px;
+    padding: 6px 12px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .pk-add-inline:hover { background: var(--blue-dark); }
+  /* ── HALF MARATHON TABLE ── */
+  .hm-table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: auto;
+    max-height: 560px;
+    box-shadow: var(--shadow);
+  }
+  .hm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: auto;
+  }
+  .hm-table th {
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 12px 14px;
+    text-align: center;
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .hm-table th:nth-child(2), .hm-table th.hm-th-left { text-align: left; }
+  .hm-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .hm-table td.hm-name { text-align: left; min-width: 180px; font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 15px; }
+  .hm-table td.hm-cityname { text-align: left; min-width: 120px; }
+  .hm-table td.hm-state   { text-align: center; min-width: 60px; max-width: 70px; }
+  .hm-table tbody tr:last-child td { border-bottom: none; }
+  .hm-table tbody tr.hm-done    { background: #edfaf3; }
+  .hm-table tbody tr.hm-done:hover { background: #d8f5e7; }
+  .hm-table tbody tr.hm-pending { background: #fff5f5; color: #a03030; }
+  .hm-table tbody tr.hm-pending:hover { background: #ffe8e8; }
+  .hm-table tbody tr { cursor: pointer; transition: background 0.12s; }
+  .hm-table td.hm-time { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 15px; color: var(--green); }
+  .hm-table tr.hm-pending td.hm-time { color: var(--muted); font-weight: 400; }
+  .hm-table td.hm-km-fast { color: #0d8a4f !important; font-weight: 700 !important; }
+  .hm-table td.hm-km-slow { color: #d6342c !important; font-weight: 700 !important; }
+  .hm-status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+  .hm-status-done    { background: var(--run); }
+  .hm-status-pending { background: #d03030; }
+  .hm-add-inline {
+    font-size: 12px; padding: 6px 12px;
+    background: var(--run); color: white;
+    border: none; border-radius: 5px;
+    cursor: pointer; font-weight: 600;
+  }
+  .hm-add-inline:hover { background: #c4521e; }
+
+  /* ── HM STATS PANEL ── */
+  .hm-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .hm-stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .hm-stat-value {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .hm-stat-run   { color: var(--green); }
+  .hm-stat-green { color: var(--green); }
+  .hm-stat-muted { color: #d03030; }
+  .hm-stat-label {
+    font-size: 11.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 4px;
+  }
+
+  .pk-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .pk-filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-family: 'Barlow', sans-serif;
+    background: var(--card);
+    color: var(--text);
+  }
+
+  /* ── PARKRUN STATS PANEL (global view) ── */
+  .pk-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .pk-stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .pk-stat-value {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .pk-stat-green { color: var(--green); }
+  .pk-stat-muted { color: #d03030; }
+  .pk-stat-blue { color: var(--blue); }
+  .pk-stat-label {
+    font-size: 11.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 4px;
+  }
+
+  .pk-mini-tables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .pk-mini-table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .pk-mini-table-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 10px;
+  }
+  .pk-mini-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .pk-mini-table th {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .pk-mini-table td {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--blue);
+    text-align: center;
+    padding: 8px 4px;
+  }
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏃🌍</div>
+    <div class="logo-wordmark">
+      <div class="logo-name">Maratourist</div>
+      <div class="logo-sub">Exploring the world through running &amp; travel</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-label">Countries</div>
+      <div class="hstat-row"><span class="hstat-val" id="stat-countries-total">–</span><span class="hstat-sep">/</span><span class="hstat-done" id="stat-countries-done">–</span><span class="hstat-sep">/</span><span class="hstat-pend" id="stat-countries-pend">–</span></div>
+      <div class="hstat-pct" id="stat-countries-pct">–%</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-label">Cities</div>
+      <div class="hstat-row"><span class="hstat-val" id="stat-cities-total">–</span><span class="hstat-sep">/</span><span class="hstat-done" id="stat-cities-done">–</span><span class="hstat-sep">/</span><span class="hstat-pend" id="stat-cities-pend">–</span></div>
+      <div class="hstat-pct" id="stat-cities-pct">–%</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-label">Half Marathons</div>
+      <div class="hstat-row"><span class="hstat-val" id="stat-hm-total">–</span><span class="hstat-sep">/</span><span class="hstat-done" id="stat-hm-done">–</span><span class="hstat-sep">/</span><span class="hstat-pend" id="stat-hm-pend">–</span></div>
+      <div class="hstat-pct" id="stat-hm-pct">–%</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-label">Parkruns</div>
+      <div class="hstat-row"><span class="hstat-val" id="stat-pk-total">–</span><span class="hstat-sep">/</span><span class="hstat-done" id="stat-pk-done">–</span><span class="hstat-sep">/</span><span class="hstat-pend" id="stat-pk-pend">–</span></div>
+      <div class="hstat-pct" id="stat-pk-pct">–%</div>
+    </div>
+  </div>
+  <div></div>
+</header>
+
+<div class="breadcrumb" id="breadcrumb"></div>
+
+<div class="main" id="main"></div>
+
+<div id="modal-root"></div>
+
+<script>
+// ════════════════════════════════════════
+// SUPABASE CONNECTION
+// ════════════════════════════════════════
+const SUPABASE_URL = 'https://mlrblwkwwwrqftibzift.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1scmJsd2t3d3dycWZ0aWJ6aWZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1OTY0MTgsImV4cCI6MjA5NzE3MjQxOH0.-Ur_YGwNv7bTAixpIyrDEpXU71MrMrTJYG3ltdR5kUU';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const tourismMeta = {
+  hotels:      { icon: "🏨", name: "Hotels" },
+  beaches:     { icon: "🏖️", name: "Beaches" },
+  mountains:   { icon: "⛰️", name: "Mountains" },
+  cafes:       { icon: "☕", name: "Cafés" },
+  libraries:   { icon: "📚", name: "Libraries" },
+  museums:     { icon: "🖼️", name: "Museums" },
+  parks:       { icon: "🌳", name: "Parks" },
+  pubs:        { icon: "🍺", name: "Pubs" },
+  restaurants: { icon: "🍽️", name: "Restaurants" }
+};
+
+// ── STATE ──
+let state = { region: null, country: null, city: null, category: null, sub: null, parkrunLocation: null, globalView: null };
+
+// ── CACHE (avoid refetching on every navigation) ──
+let regionsCache = null;       // array of region rows
+let countriesCache = null;     // array of all country rows (with region)
+let citiesCache = {};          // countryId -> array of city rows
+let activitiesCache = {};      // cityId -> array of activity rows
+let tourismCache = {};         // cityId -> array of tourism rows
+
+async function loadRegionsAndCountries() {
+  if (regionsCache && countriesCache) return;
+  const [{ data: regions, error: e1 }, { data: countries, error: e2 }] = await Promise.all([
+    sb.from('regions').select('*'),
+    sb.from('countries').select('*').order('name')
+  ]);
+  if (e1) console.error('regions error', e1);
+  if (e2) console.error('countries error', e2);
+  regionsCache = regions || [];
+  countriesCache = countries || [];
+}
+
+async function loadCities(countryId) {
+  if (citiesCache[countryId]) return citiesCache[countryId];
+  const { data, error } = await sb.from('cities').select('*').eq('country_id', countryId).order('name');
+  if (error) console.error('cities error', error);
+  citiesCache[countryId] = data || [];
+  return citiesCache[countryId];
+}
+
+async function loadActivities(cityId) {
+  if (activitiesCache[cityId]) return activitiesCache[cityId];
+  const { data, error } = await sb.from('activities').select('*').eq('city_id', cityId).order('event_date', { ascending: false });
+  if (error) console.error('activities error', error);
+  activitiesCache[cityId] = data || [];
+  return activitiesCache[cityId];
+}
+
+async function loadTourism(cityId) {
+  if (tourismCache[cityId]) return tourismCache[cityId];
+  const { data, error } = await sb.from('tourism_entries').select('*').eq('city_id', cityId).order('visit_date', { ascending: false });
+  if (error) console.error('tourism error', error);
+  tourismCache[cityId] = data || [];
+  return tourismCache[cityId];
+}
+
+// ── GLOBAL STATS AGGREGATION (for region/country/city cards) ──
+// Maps: cityId -> {halfMarathons, parkruns}, countryId -> {halfMarathons, parkruns, citiesCount}, regionId -> {...}
+let statsLoaded = false;
+let cityStats = {};      // cityId -> { hm: n, pk: n }
+let countryStats = {};   // countryId -> { hm: n, pk: n, cities: n }
+let regionStats = {};    // regionId -> { hm: n, pk: n, cities: n }
+
+let statsLoadingPromise = null;
+
+async function loadAllStats() {
+  if (statsLoaded) return;
+  if (statsLoadingPromise) return statsLoadingPromise;
+
+  statsLoadingPromise = (async () => {
+    cityStats = {};
+    countryStats = {};
+    regionStats = {};
+
+    const [
+      { data: allCities },
+      { data: allHM },
+      { data: allLocations },
+      { data: allResults },
+      { data: allTourism }
+    ] = await Promise.all([
+      sb.from('cities').select('id, country_id'),
+      sb.from('half_marathon_races').select('id, city_id'),
+      sb.from('parkrun_locations').select('id, city_id'),
+      sb.from('parkrun_results').select('location_id'),
+      sb.from('tourism_entries').select('city_id')
+    ]);
+
+    const cities = allCities || [];
+    const hmRows = allHM || [];
+    const locations = allLocations || [];
+    const results = allResults || [];
+    const tourismRows = allTourism || [];
+
+    // map location_id -> city_id
+    const locToCity = {};
+    locations.forEach(l => locToCity[l.id] = l.city_id);
+
+    // count parkrun locations per city (total registered)
+    const pkLocPerCity = {};
+    locations.forEach(l => { pkLocPerCity[l.city_id] = (pkLocPerCity[l.city_id] || 0) + 1; });
+
+    // count done pk locations per city (locations that have at least 1 result)
+    const pkDoneLocIds = new Set(results.map(r => r.location_id));
+    const pkDonePerCity = {};
+    locations.forEach(l => {
+      if (pkDoneLocIds.has(l.id)) {
+        pkDonePerCity[l.city_id] = (pkDonePerCity[l.city_id] || 0) + 1;
+      }
+    });
+
+    // hm per city — count unique races + done races (those with at least 1 result)
+    const { data: allHMResults } = await sb.from('half_marathon_results').select('race_id');
+    const hmDoneRaceIds = new Set((allHMResults || []).map(r => r.race_id));
+    const hmPerCity = {};      // total races registered per city
+    const hmDonePerCity = {};  // races with at least 1 result per city
+    hmRows.forEach(row => {
+      hmPerCity[row.city_id] = (hmPerCity[row.city_id] || 0) + 1;
+      if (hmDoneRaceIds.has(row.id)) {
+        hmDonePerCity[row.city_id] = (hmDonePerCity[row.city_id] || 0) + 1;
+      }
+    });
+
+    // tourism per city
+    const tourismPerCity = {};
+    tourismRows.forEach(row => { tourismPerCity[row.city_id] = (tourismPerCity[row.city_id] || 0) + 1; });
+
+    // init cityStats
+    cities.forEach(c => {
+      cityStats[c.id] = {
+        hm: hmDonePerCity[c.id] || 0,
+        hmTotal: hmPerCity[c.id] || 0,
+        pk: pkDonePerCity[c.id] || 0,
+        pkTotal: pkLocPerCity[c.id] || 0,
+        tourism: tourismPerCity[c.id] || 0
+      };
+    });
+
+    // aggregate to country level
+    cities.forEach(c => {
+      const countryId = c.country_id;
+      if (!countryStats[countryId]) countryStats[countryId] = { hm: 0, hmTotal: 0, pk: 0, pkTotal: 0, cities: 0, citiesVisited: 0, tourism: 0 };
+      countryStats[countryId].cities += 1;
+      const csCity = cityStats[c.id];
+      const cityVisited = csCity.hm > 0 || csCity.pk > 0 || csCity.tourism > 0;
+      if (cityVisited) countryStats[countryId].citiesVisited += 1;
+      countryStats[countryId].hm += csCity.hm;
+      countryStats[countryId].hmTotal += csCity.hmTotal;
+      countryStats[countryId].pk += csCity.pk;
+      countryStats[countryId].pkTotal += csCity.pkTotal;
+      countryStats[countryId].tourism += csCity.tourism;
+    });
+
+    // aggregate to region level
+    if (countriesCache) {
+      countriesCache.forEach(country => {
+        const regionId = country.region;
+        if (!regionStats[regionId]) regionStats[regionId] = { hm: 0, hmTotal: 0, pk: 0, pkTotal: 0, cities: 0, citiesVisited: 0, tourism: 0 };
+        const cs = countryStats[country.id] || { hm: 0, hmTotal: 0, pk: 0, pkTotal: 0, cities: 0, citiesVisited: 0, tourism: 0 };
+        regionStats[regionId].hm += cs.hm;
+        regionStats[regionId].hmTotal += cs.hmTotal;
+        regionStats[regionId].pk += cs.pk;
+        regionStats[regionId].pkTotal += cs.pkTotal;
+        regionStats[regionId].cities += cs.cities;
+        regionStats[regionId].citiesVisited += cs.citiesVisited;
+        regionStats[regionId].tourism += cs.tourism;
+      });
+    }
+
+    statsLoaded = true;
+  })();
+
+  await statsLoadingPromise;
+  statsLoadingPromise = null;
+}
+
+async function loadHeaderStats() {
+  const [
+    { data: allCountries },
+    { data: allCities },
+    { data: pkLocations },
+    { data: pkResults },
+    { data: hmRaces },
+    { data: hmResults },
+    { data: tourismEntries }
+  ] = await Promise.all([
+    sb.from('countries').select('id, visited'),
+    sb.from('cities').select('id, country_id'),
+    sb.from('parkrun_locations').select('id, city_id'),
+    sb.from('parkrun_results').select('location_id'),
+    sb.from('half_marathon_races').select('id, city_id'),
+    sb.from('half_marathon_results').select('race_id'),
+    sb.from('tourism_entries').select('city_id')
+  ]);
+
+  function setStatBox(prefix, total, done) {
+    const t = total ?? 0;
+    const d = Math.min(done ?? 0, t);
+    const pct = t > 0 ? ((d / t) * 100).toFixed(2) : '0.00';
+    document.getElementById('stat-' + prefix + '-total').textContent = t;
+    document.getElementById('stat-' + prefix + '-done').textContent  = d;
+    document.getElementById('stat-' + prefix + '-pend').textContent  = t - d;
+    document.getElementById('stat-' + prefix + '-pct').textContent   = pct + '%';
+  }
+
+  // ── Parkruns: total = all locations; done = locations with >= 1 result ──
+  const pkDoneLocIds = new Set((pkResults||[]).map(r => r.location_id));
+  setStatBox('pk', (pkLocations||[]).length, pkDoneLocIds.size);
+
+  // ── Half Marathons: total = all races; done = races with >= 1 result ──
+  const hmDoneRaceIds = new Set((hmResults||[]).map(r => r.race_id));
+  setStatBox('hm', (hmRaces||[]).length, hmDoneRaceIds.size);
+
+  // ── Cities: total = all cities; done = cities where you actually did something ──
+  // A city is DONE if it has: a parkrun WITH result, an HM WITH result, or a tourism entry
+  const citiesWithPkResult  = new Set((pkLocations||[]).filter(l => pkDoneLocIds.has(l.id)).map(l => l.city_id));
+  const citiesWithHMResult  = new Set((hmRaces||[]).filter(r => hmDoneRaceIds.has(r.id)).map(r => r.city_id));
+  const citiesWithTourism   = new Set((tourismEntries||[]).map(r => r.city_id));
+  const visitedCityIds = new Set([...citiesWithPkResult, ...citiesWithHMResult, ...citiesWithTourism]);
+  setStatBox('cities', (allCities||[]).length, visitedCityIds.size);
+
+  // ── Countries: total = all countries; done = manually visited OR has a done city ──
+  const visitedCountryIds = new Set(
+    (allCities||[]).filter(c => visitedCityIds.has(c.id)).map(c => c.country_id)
+  );
+  (allCountries||[]).filter(c => c.visited).forEach(c => visitedCountryIds.add(c.id));
+  setStatBox('countries', (allCountries||[]).length, visitedCountryIds.size);
+}
+
+function go(level, val) {
+  if (level === 'home')   state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:null };
+  if (level === 'region') state = { region:val, country:null, city:null, category:null, sub:null, parkrunLocation:null };
+  if (level === 'country')state.country = val, state.city=null, state.category=null, state.sub=null, state.parkrunLocation=null;
+  if (level === 'city')   state.city = val, state.category=null, state.sub=null, state.parkrunLocation=null;
+  if (level === 'category') state.category = val, state.sub=null, state.parkrunLocation=null;
+  if (level === 'sub')    state.sub = val, state.parkrunLocation=null;
+  render();
+}
+
+function goDirectRun(sub) {
+  state.category = 'run';
+  state.sub = sub;
+  state.parkrunLocation = null;
+  render();
+}
+
+function goGlobalParkruns() {
+  state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:'parkruns' };
+  render();
+}
+
+function goGlobalHalfMarathons() {
+  state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:'halfmarathons' };
+  render();
+}
+
+function regionMeta(id) {
+  return regionsCache.find(r => r.id === id);
+}
+function countriesInRegion(id) {
+  return countriesCache.filter(c => c.region === id);
+}
+
+function updateBreadcrumb(ctx) {
+  const bc = document.getElementById('breadcrumb');
+  let parts = [`<span onclick="go('home')">World</span>`];
+  if (state.globalView === 'parkruns') {
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(`<span class="current">All Parkruns</span>`);
+    bc.innerHTML = parts.join('');
+    return;
+  }
+  if (state.globalView === 'halfmarathons') {
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(`<span class="current">All Half Marathons</span>`);
+    bc.innerHTML = parts.join('');
+    return;
+  }
+  if (state.region !== null) {
+    const r = regionMeta(state.region);
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(state.country===null ? `<span class="current">${r.name}</span>` : `<span onclick="go('region','${state.region}')">${r.name}</span>`);
+  }
+  if (state.country !== null && ctx.country) {
+    const c = ctx.country;
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(state.city===null ? `<span class="current">${c.flag_emoji} ${c.name}</span>` : `<span onclick="go('country',${state.country})">${c.flag_emoji} ${c.name}</span>`);
+  }
+  if (state.city !== null && ctx.city) {
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(state.category===null ? `<span class="current">${ctx.city.name}</span>` : `<span onclick="go('city',${state.city})">${ctx.city.name}</span>`);
+  }
+  if (state.category !== null && state.category !== 'run') {
+    const label = 'Tourism';
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(state.sub===null ? `<span class="current">${label}</span>` : `<span onclick="go('category','${state.category}')">${label}</span>`);
+  }
+  if (state.sub !== null) {
+    const label = state.category === 'run'
+      ? (state.sub === 'half_marathon' ? 'Half Marathons' : 'Parkruns')
+      : tourismMeta[state.sub].name;
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(state.parkrunLocation ? `<span onclick="go('sub','parkrun')">${label}</span>` : `<span class="current">${label}</span>`);
+  }
+  if (state.parkrunLocation) {
+    const loc = parkrunLocationsCache[state.parkrunLocation];
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(`<span class="current">${loc ? loc.name : ''}</span>`);
+  }
+  bc.innerHTML = parts.join('');
+}
+
+function loadingHTML() {
+  return `<div class="empty-state"><div class="es-icon">⏳</div><div class="es-text">Loading...</div></div>`;
+}
+
+async function render() {
+  const main = document.getElementById('main');
+  main.innerHTML = loadingHTML();
+
+  await loadRegionsAndCountries();
+  await loadAllStats();
+
+  // GLOBAL VIEW: All Parkruns hub
+  if (state.globalView === 'parkruns') {
+    updateBreadcrumb({});
+    main.innerHTML = `
+      <div class="back-btn" onclick="go('home')">‹ Back to World</div>
+      <div class="page-header">
+        <div class="page-title">🏃 All Parkruns</div>
+        <div class="page-subtitle">Every parkrun location you've logged, across all cities</div>
+      </div>
+      <div id="pk-stats-panel"></div>
+      <div class="pk-filters" id="pk-filters-bar"></div>
+      <div id="pk-table-container">Loading...</div>
+    `;
+    await renderParkrunTable({ cityId: null });
+    return;
+  }
+
+  // GLOBAL VIEW: All Half Marathons hub
+  if (state.globalView === 'halfmarathons') {
+    updateBreadcrumb({});
+    main.innerHTML = `
+      <div class="back-btn" onclick="go('home')">‹ Back to World</div>
+      <div class="page-header">
+        <div class="page-title">🏅 All Half Marathons</div>
+        <div class="page-subtitle">Every half marathon you've run or planned, across all cities</div>
+      </div>
+      <div id="hm-stats-panel"></div>
+      <div class="pk-filters" id="hm-filters-bar"></div>
+      <div id="hm-table-container">Loading...</div>
+    `;
+    await renderHalfMarathonTable({ cityId: null });
+    return;
+  }
+
+  // LEVEL 0: WORLD
+  if (state.region === null) {
+    updateBreadcrumb({});
+    main.innerHTML = `
+      <div class="page-header">
+        <div class="page-title">🌐 World Map</div>
+        <div class="page-subtitle">Select a region to explore countries, cities and adventures</div>
+      </div>
+      <div style="margin-bottom: 28px; display:flex; gap:16px; flex-wrap:wrap">
+        <button class="hero-cta-btn" onclick="goGlobalHalfMarathons()">🏅 All Half Marathons</button>
+        <button class="hero-cta-btn" onclick="goGlobalParkruns()">🏃 All Parkruns</button>
+      </div>
+      <div class="region-grid">
+        ${regionsCache.map(r => {
+          const countriesHere = countriesInRegion(r.id);
+          // A country is visited if manually flagged OR has a done city (pk/hm result or tourism)
+          const visited = countriesHere.filter(c => {
+            if (c.visited) return true;
+            const cs = countryStats[c.id];
+            return cs && (cs.hm > 0 || cs.pk > 0 || cs.tourism > 0);
+          }).length;
+          const rs = regionStats[r.id] || { hm: 0, pk: 0, cities: 0 };
+          return `
+          <div class="region-card" style="--accent-color:${r.color}" onclick="go('region','${r.id}')">
+            <div class="region-card-top">
+              <div class="region-emoji">${r.emoji}</div>
+            </div>
+            <div class="region-card-name">${r.name}</div>
+            <div class="region-card-meta">${countriesHere.length} countries &amp; territories total</div>
+            <div class="region-card-tags">
+              <span class="tag tag-travel">✓ ${visited} visited</span>
+              ${rs.cities > 0 ? `<span class="tag" style="color:var(--blue)">🏙️ ${rs.citiesVisited||0}/${rs.cities} Cities</span>` : ''}
+              ${rs.hmTotal > 0 ? `<span class="tag tag-run">🏅 ${rs.hm}/${rs.hmTotal} HM</span>` : ''}
+              ${rs.pkTotal > 0 ? `<span class="tag tag-park">🏃 ${rs.pk}/${rs.pkTotal} Parkrun${rs.pkTotal===1?'':'s'}</span>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    return;
+  }
+
+  const region = regionMeta(state.region);
+  const regionCountries = countriesInRegion(state.region);
+
+  // LEVEL 1: REGION → countries
+  if (state.country === null) {
+    updateBreadcrumb({});
+    if (regionCountries.length === 0) {
+      main.innerHTML = `
+        <div class="back-btn" onclick="go('home')">‹ Back to World</div>
+        <div class="page-header">
+          <div class="page-title">${region.emoji} ${region.name}</div>
+        </div>
+        <div class="empty-state">
+          <div class="es-icon">🗺️</div>
+          <div class="es-text">No countries found in the database for this region.</div>
+        </div>`;
+      return;
+    }
+    const visitedCount = regionCountries.filter(c => {
+      if (c.visited) return true;
+      const cs = countryStats[c.id];
+      return cs && (cs.hm > 0 || cs.pk > 0 || cs.tourism > 0);
+    }).length;
+    main.innerHTML = `
+      <div class="back-btn" onclick="go('home')">‹ Back to World</div>
+      <div class="page-header">
+        <div class="page-title">${region.emoji} ${region.name}</div>
+        <div class="page-subtitle">${visitedCount} of ${regionCountries.length} countries &amp; territories visited</div>
+      </div>
+      <div class="square-grid">
+        ${regionCountries.map((c) => {
+          const cs = countryStats[c.id] || { hm: 0, pk: 0, pkTotal: 0, tourism: 0 };
+          const cs2 = countryStats[c.id] || {};
+          const isVisited = c.visited || cs2.hm > 0 || cs2.pk > 0 || cs2.tourism > 0;
+          const borderStyle = isVisited ? 'border-color:var(--blue);' : 'border-color:var(--border);';
+          return `
+          <div class="square-card" onclick="go('country',${c.id})" style="${borderStyle}">
+            ${countryFlagImg(c.flag_emoji, c.name)}
+            <div class="square-name" style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700">${c.name}</div>
+            <div class="square-count" style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.capital || ''}</div>
+            <div class="region-card-tags" style="justify-content:center; margin-top:8px; flex-wrap:wrap; gap:4px">
+              ${isVisited ? `<span class="tag tag-travel">✓ Visited</span>` : '<span class="tag" style="background:#f4f6f9;color:var(--muted)">Not visited</span>'}
+              ${cs.cities > 0 ? `<span class="tag" style="color:var(--blue)">🏙️ ${cs.citiesVisited||0}/${cs.cities} Cities</span>` : ''}
+              ${cs.hmTotal > 0 ? `<span class="tag tag-run">🏅 ${cs.hm}/${cs.hmTotal} HM</span>` : ''}
+              ${cs.pkTotal > 0 ? `<span class="tag tag-park">🏃 ${cs.pk}/${cs.pkTotal} Parkrun${cs.pkTotal===1?'':'s'}</span>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    return;
+  }
+
+  const country = countriesCache.find(c => c.id === state.country);
+  const cities = await loadCities(country.id);
+
+  // LEVEL 2: COUNTRY → cities (grouped by state, table layout)
+  if (state.city === null) {
+    updateBreadcrumb({ country });
+
+    const stateMap = {};
+    cities.forEach(city => {
+      const s = city.state || '—';
+      if (!stateMap[s]) stateMap[s] = [];
+      stateMap[s].push(city);
+    });
+    // Sort states by total items (hm+pk+tourism done) desc, then total registered desc, then alpha
+    const stateKeys = Object.keys(stateMap).sort(function(a, b) {
+      function stateScore(key) {
+        const cities = stateMap[key];
+        let done = 0, total = 0;
+        cities.forEach(function(city) {
+          const cs = cityStats[city.id] || {};
+          done  += (cs.hm||0) + (cs.pk||0) + (cs.tourism||0);
+          total += (cs.hmTotal||0) + (cs.pkTotal||0);
+        });
+        return { done, total };
+      }
+      const sa = stateScore(a), sb = stateScore(b);
+      if (sb.done !== sa.done) return sb.done - sa.done;
+      if (sb.total !== sa.total) return sb.total - sa.total;
+      return a.localeCompare(b);
+    });
+
+    const stateFlagMap = {
+      'QLD': '🟡', 'NSW': '🔵', 'VIC': '💙', 'SA': '🔴', 'WA': '⚫', 'TAS': '🟢', 'ACT': '🌸', 'NT': '🟠',
+      'California': '🐻', 'Texas': '⭐', 'New York': '🗽', 'Florida': '🌴',
+      'Ontario': '🍁', 'British Columbia': '🍁', 'Quebec': '🍁', '—': '🏙️'
+    };
+
+    function buildCityTable() {
+      return stateKeys.map(function(stateKey) {
+        const stateCities = stateMap[stateKey];
+        const stateIcon = stateFlagMap[stateKey] || '📍';
+        const label = stateKey === '—' ? 'No State' : stateKey;
+
+        // State-level totals
+        let stateHMDone = 0, stateHMTotal = 0, statePKDone = 0, statePKTotal = 0, stateTourism = 0;
+        stateCities.forEach(function(city) {
+          const cs = cityStats[city.id] || {};
+          stateHMDone  += cs.hm || 0;
+          stateHMTotal += cs.hmTotal || 0;
+          statePKDone  += cs.pk || 0;
+          statePKTotal += cs.pkTotal || 0;
+          stateTourism += cs.tourism || 0;
+        });
+
+        // Sort cities: done items desc → total registered desc → alpha
+        const sortedCities = stateCities.slice().sort(function(a, b) {
+          const ca = cityStats[a.id] || {}, cb = cityStats[b.id] || {};
+          const doneA = (ca.hm||0) + (ca.pk||0) + (ca.tourism||0);
+          const doneB = (cb.hm||0) + (cb.pk||0) + (cb.tourism||0);
+          if (doneB !== doneA) return doneB - doneA;
+          const totalA = (ca.hmTotal||0) + (ca.pkTotal||0);
+          const totalB = (cb.hmTotal||0) + (cb.pkTotal||0);
+          if (totalB !== totalA) return totalB - totalA;
+          return a.name.localeCompare(b.name);
+        });
+
+        const rows = sortedCities.map(function(city) {
+          const cs = cityStats[city.id] || { hm: 0, hmTotal: 0, pk: 0, pkTotal: 0, tourism: 0 };
+
+          // Row is 100% done if everything registered has been done (and at least 1 item)
+          const totalDone = (cs.hm||0) + (cs.pk||0) + (cs.tourism||0);
+          const totalReg  = (cs.hmTotal||0) + (cs.pkTotal||0);
+          const allDone   = totalReg > 0 && cs.hm === cs.hmTotal && cs.pk === cs.pkTotal;
+          const rowBg     = allDone ? 'background:#edfaf3;' : '';
+
+          const dot = totalDone > 0
+            ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;flex-shrink:0"></span>'
+            : '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d03030;margin-right:6px;flex-shrink:0"></span>';
+
+          // cell: done in blue, total in bold, pct alongside
+          function cell(done, total) {
+            if (total === 0) return '<td style="text-align:center;padding:10px 14px;color:var(--muted)">—</td>';
+            const pct = ((done/total)*100).toFixed(0);
+            const doneColor = done === 0 ? '#d03030' : 'var(--blue)';
+            return '<td style="text-align:center;padding:10px 14px">'
+              + '<span style="color:' + doneColor + ';font-weight:700">' + done + '</span>'
+              + '<span style="color:var(--muted);font-weight:400"> / </span>'
+              + '<span style="font-weight:700;color:var(--text)">' + total + '</span>'
+              + '<span style="font-size:11px;color:var(--muted);margin-left:5px">(' + pct + '%)</span>'
+              + '</td>';
+          }
+
+          const pop = city.population ? city.population.toLocaleString() : '—';
+          return '<tr style="cursor:pointer;transition:background 0.12s;' + rowBg + '" onmouseover="this.style.background=\'#e6f7ef\'" onmouseout="this.style.background=\'' + (allDone ? '#edfaf3' : '') + '\'" onclick="go(\'city\',' + city.id + ')">'
+            + '<td style="padding:10px 14px;font-weight:600;white-space:nowrap;display:flex;align-items:center">' + dot + city.name + '</td>'
+            + '<td style="text-align:center;padding:10px 14px;color:var(--muted)">' + pop + '</td>'
+            + cell(cs.hm, cs.hmTotal)
+            + cell(cs.pk, cs.pkTotal)
+            + '<td style="text-align:center;padding:10px 14px">'
+            + (cs.tourism > 0 ? '<span style="color:var(--blue);font-weight:700">' + cs.tourism + '</span>' : '<span style="color:var(--muted)">—</span>')
+            + '</td>'
+            + '</tr>';
+        }).join('');
+
+        function totalCell(done, total) {
+          if (total === 0) return '<td style="text-align:center;padding:10px 14px;color:var(--muted);background:var(--bg)">—</td>';
+          const pct = ((done/total)*100).toFixed(0);
+          const doneColor = done === 0 ? '#d03030' : 'var(--blue)';
+          return '<td style="text-align:center;padding:10px 14px;background:var(--bg)">'
+            + '<span style="color:' + doneColor + ';font-weight:700">' + done + '</span>'
+            + '<span style="color:var(--muted);font-weight:400"> / </span>'
+            + '<span style="font-weight:700;color:var(--text)">' + total + '</span>'
+            + '<span style="font-size:11px;color:var(--muted);margin-left:5px">(' + pct + '%)</span>'
+            + '</td>';
+        }
+
+        return '<div style="margin-bottom:32px">'
+          + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+          + '<span style="font-size:18px">' + stateIcon + '</span>'
+          + '<span style="font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:700">' + label + '</span>'
+          + '<span style="color:var(--muted);font-size:13px">(' + stateCities.length + ' ' + (stateCities.length===1?'city':'cities') + ')</span>'
+          + '</div>'
+          + '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)">'
+          + '<table style="width:100%;border-collapse:collapse;font-size:14px">'
+          + '<thead><tr style="background:var(--bg)">'
+          + '<th style="text-align:left;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);border-bottom:2px solid var(--border)">City</th>'
+          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);border-bottom:2px solid var(--border)">Population</th>'
+          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--run);border-bottom:2px solid var(--border)">🏅 Half Marathon</th>'
+          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--parkrun);border-bottom:2px solid var(--border)">🏃 Parkrun</th>'
+          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--travel);border-bottom:2px solid var(--border)">🧭 Tourism</th>'
+          + '</tr></thead>'
+          + '<tbody>' + rows + '</tbody>'
+          + (stateCities.length > 1
+            ? '<tfoot><tr style="background:var(--bg);border-top:2px solid var(--border)">'
+              + '<td style="padding:10px 14px;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted)">TOTAL</td>'
+              + '<td style="padding:10px 14px;background:var(--bg)"></td>'
+              + totalCell(stateHMDone, stateHMTotal)
+              + totalCell(statePKDone, statePKTotal)
+              + '<td style="text-align:center;padding:10px 14px;background:var(--bg);font-weight:700;color:var(--blue)">' + (stateTourism || '—') + '</td>'
+              + '</tr></tfoot>'
+            : '')
+          + '</table></div>'
+          + '</div>';
+      }).join('');
+    }
+
+    main.innerHTML = '<div class="back-btn" onclick="go(\'region\',\'' + state.region + '\')">‹ Back to ' + region.name + '</div>'
+      + '<div class="page-header">'
+      + '<div class="page-title">' + countryFlagImg(country.flag_emoji, country.name) + ' ' + country.name + '</div>'
+      + (function() {
+          const cs2 = countryStats[country.id] || {};
+          return '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:20px;align-items:center">'
+            + '<div style="font-size:14px;color:var(--muted)">🏛️ <b style="color:var(--text)">' + (country.capital || '—') + '</b></div>'
+            + '<div style="font-size:14px;color:var(--muted)">🏙️ <span style="color:var(--green);font-weight:700">' + (cs2.citiesVisited||0) + '</span><span style="color:var(--muted)">/' + (cs2.cities||cities.length) + '</span> <span style="color:var(--muted)">cities visited</span></div>'
+            + (cs2.hmTotal > 0 ? '<div style="font-size:14px">🏅 <span style="color:var(--blue);font-weight:700">' + (cs2.hm||0) + '</span><span style="color:var(--muted)">/' + cs2.hmTotal + '</span> <span style="color:var(--muted)">half marathons</span></div>' : '')
+            + (cs2.pkTotal > 0 ? '<div style="font-size:14px">🏃 <span style="color:var(--blue);font-weight:700">' + (cs2.pk||0) + '</span><span style="color:var(--muted)">/' + cs2.pkTotal + '</span> <span style="color:var(--muted)">parkruns</span></div>' : '')
+            + '</div>';
+        })()
+      + '</div>'
+      + '<div class="action-btn-row">'
+      + '<button class="action-btn" onclick="openCityForm(' + country.id + ')">+ Add City</button>'
+      + '</div>'
+      + (cities.length === 0
+        ? '<div class="empty-state"><div class="es-icon">📍</div><div class="es-text">No cities logged yet for ' + country.name + '.</div></div>'
+        : buildCityTable());
+    return;
+  }
+
+  const city = cities.find(c => c.id === state.city);
+  const activities = await loadActivities(city.id);
+  const tourism = await loadTourism(city.id);
+
+  // LEVEL 3: CITY → Half Marathons / Parkruns / Tourism (direct, no intermediate "Activities" step)
+  if (state.category === null) {
+    updateBreadcrumb({ country, city });
+    const halfMarathons = activities.filter(a => a.type === 'half_marathon');
+    main.innerHTML = `
+      <div class="back-btn" onclick="go('country',${state.country})">‹ Back to ${country.name}</div>
+      <div class="page-header">
+        <div class="page-title">📍 ${city.name}</div>
+        <div class="page-subtitle">${country.flag_emoji} ${country.name}</div>
+      </div>
+      <div class="category-grid" style="grid-template-columns: repeat(3, 1fr); max-width: 900px">
+        <div class="category-card" onclick="goDirectRun('half_marathon')">
+          <div class="category-icon">🏅</div>
+          <div class="category-name">Half Marathons</div>
+          <div class="category-count">${halfMarathons.length} logged</div>
+        </div>
+        <div class="category-card" onclick="goDirectRun('parkrun')">
+          <div class="category-icon">🏃</div>
+          <div class="category-name">Parkruns</div>
+          <div class="category-count">${(cityStats[city.id] || {pk:0}).pk} logged</div>
+        </div>
+        <div class="category-card" onclick="go('category','tourism')">
+          <div class="category-icon">🧭</div>
+          <div class="category-name">Tourism</div>
+          <div class="category-count">${tourism.length} logged</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // LEVEL 4: TOURISM CATEGORY → subcategory grid (Half Marathons/Parkruns skip this, handled above)
+  if (state.sub === null) {
+    updateBreadcrumb({ country, city });
+    main.innerHTML = `
+      <div class="back-btn" onclick="go('city',${state.city})">‹ Back to ${city.name}</div>
+      <div class="page-header">
+        <div class="page-title">🧭 Tourism — ${city.name}</div>
+      </div>
+      <div class="subcat-grid">
+        ${Object.entries(tourismMeta).map(([key, meta]) => `
+          <div class="subcat-card" onclick="go('sub','${key}')">
+            <div class="subcat-icon">${meta.icon}</div>
+            <div class="subcat-name">${meta.name}</div>
+            <div class="subcat-count">${tourism.filter(t => t.category === key).length} logged</div>
+          </div>`).join('')}
+      </div>`;
+    return;
+  }
+
+  // LEVEL 5: SUBCATEGORY → entry list
+  updateBreadcrumb({ country, city });
+
+  // PARKRUN gets its own special view: WCA-style ranking table
+  if (state.category === 'run' && state.sub === 'parkrun') {
+    main.innerHTML = `
+      <div class="back-btn" onclick="go('city',${state.city})">‹ Back to ${city.name}</div>
+      <div class="page-header">
+        <div class="page-title">🏃 Parkruns — ${city.name}</div>
+      </div>
+      <div class="action-btn-row">
+        <button class="action-btn" onclick="openParkrunLocationForm(${city.id})">+ Add Parkrun Location</button>
+      </div>
+      <div id="pk-table-container">Loading...</div>
+    `;
+    await renderParkrunTable({ cityId: city.id });
+    return;
+  }
+
+  // HALF MARATHON gets its own special view: ranking table
+  if (state.category === 'run' && state.sub === 'half_marathon') {
+    main.innerHTML = `
+      <div class="back-btn" onclick="go('city',${state.city})">‹ Back to ${city.name}</div>
+      <div class="page-header">
+        <div class="page-title">🏅 Half Marathons — ${city.name}</div>
+      </div>
+      <div class="action-btn-row">
+        <button class="action-btn" style="background:var(--run)" onclick="openHalfMarathonRaceForm(${city.id})">+ Add Race</button>
+      </div>
+      <div id="hm-table-container">Loading...</div>
+    `;
+    await renderHalfMarathonTable({ cityId: city.id });
+    return;
+  }
+
+  // GENERIC entry list (half marathons + tourism categories)
+  let entries, title, icon, backAction;
+  if (state.category === 'run') {
+    entries = activities.filter(a => a.type === state.sub).map(a => ({ name: a.name, date: a.event_date, result: a.result_time }));
+    title = 'Half Marathons';
+    icon = '🏅';
+    backAction = `go('city',${state.city})`;
+  } else {
+    entries = tourism.filter(t => t.category === state.sub).map(t => ({ name: t.name, date: t.visit_date, result: t.rating }));
+    title = tourismMeta[state.sub].name;
+    icon = tourismMeta[state.sub].icon;
+    backAction = `go('category','tourism')`;
+  }
+
+  main.innerHTML = `
+    <div class="back-btn" onclick="${backAction}">‹ Back</div>
+    <div class="page-header">
+      <div class="page-title">${icon} ${title} — ${city.name}</div>
+    </div>
+    ${entries.length === 0 ? `
+      <div class="empty-state">
+        <div class="es-icon">${icon}</div>
+        <div class="es-text">Nothing logged yet for ${title.toLowerCase()} in ${city.name}.</div>
+      </div>` : `
+      <div class="entry-list">
+        ${entries.map(e => `
+          <div class="entry-row">
+            <div class="entry-icon">${icon}</div>
+            <div class="entry-info">
+              <div class="entry-name">${e.name}</div>
+              <div class="entry-date">${e.date || ''}</div>
+            </div>
+            <div class="entry-result">${e.result || ''}</div>
+          </div>`).join('')}
+      </div>`}
+  `;
+}
+
+// ════════════════════════════════════════
+// PARKRUN WCA-STYLE RANKING TABLE
+// ════════════════════════════════════════
+
+// Loads ALL parkrun locations (optionally filtered by city) joined with their results,
+// plus city/country/state info, and renders a flat sorted table.
+// Converts 'YYYY-MM-DD' (ISO, from Supabase) to 'DD/MM/YYYY' for display only.
+// Sorting/storage always stays in ISO format — only this function changes how it LOOKS.
+// Convert flag emoji (e.g. 🇦🇺) to ISO-2 code (e.g. "au") for flagcdn.com
+function flagEmojiToISO(emoji) {
+  if (!emoji) return null;
+  try {
+    const cps = [...emoji].map(c => c.codePointAt(0));
+    // Regional indicator letters: 0x1F1E6=A ... 0x1F1FF=Z
+    const letters = cps.filter(cp => cp >= 0x1F1E6 && cp <= 0x1F1FF)
+                       .map(cp => String.fromCharCode(cp - 0x1F1E6 + 65));
+    if (letters.length === 2) return letters.join('').toLowerCase();
+  } catch(e) {}
+  return null;
+}
+
+function countryFlagImg(flagEmoji, name) {
+  const iso = flagEmojiToISO(flagEmoji);
+  if (!iso) return `<span class="square-flag">${flagEmoji}</span>`;
+  return `<div class="square-flag-img-wrap">
+    <img class="square-flag-img" src="https://flagcdn.com/w80/${iso}.png"
+         srcset="https://flagcdn.com/w160/${iso}.png 2x"
+         alt="${name}" loading="lazy"
+         onerror="this.parentNode.innerHTML='<span style=\'font-size:36px;\'>${flagEmoji}</span>'">
+  </div>`;
+}
+
+function toTitleCase(str) {
+  if (!str) return str;
+  return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
+function formatDate(isoDate) {
+  if (!isoDate) return '–';
+  const parts = isoDate.split('-');
+  if (parts.length !== 3) return isoDate;
+  const [y, m, d] = parts;
+  return `${d}/${m}/${y}`;
+}
+
+// Parses an "MM:SS" string to total seconds. Returns null if invalid/empty.
+function parseTimeToSeconds(t) {
+  if (!t) return null;
+  const m = t.match(/^(\d+):(\d{2})$/);
+  if (!m) return null;
+  return parseInt(m[1]) * 60 + parseInt(m[2]);
+}
+
+// Given the 5 km split strings, returns { fastestIdx, slowestIdx } (0-4), or nulls if not enough data.
+function getKmExtremes(splits) {
+  const seconds = splits.map(parseTimeToSeconds);
+  const validIdx = seconds.map((s, i) => s != null ? i : null).filter(i => i !== null);
+  if (validIdx.length < 2) return { fastestIdx: null, slowestIdx: null };
+  let fastestIdx = validIdx[0], slowestIdx = validIdx[0];
+  validIdx.forEach(i => {
+    if (seconds[i] < seconds[fastestIdx]) fastestIdx = i;
+    if (seconds[i] > seconds[slowestIdx]) slowestIdx = i;
+  });
+  if (fastestIdx === slowestIdx) return { fastestIdx: null, slowestIdx: null }; // all equal, nothing to highlight
+  return { fastestIdx, slowestIdx };
+}
+
+function kmCellClass(idx, extremes) {
+  if (extremes.fastestIdx === idx) return 'pk-km-fast';
+  if (extremes.slowestIdx === idx) return 'pk-km-slow';
+  return '';
+}
+
+// Cache of the last computed rows (unfiltered), so filters can re-render without refetching.
+let pkAllRowsCache = null;
+let pkCurrentFilters = { country: '', city: '', state: '', status: '' };
+
+async function renderParkrunTable({ cityId = null } = {}) {
+  const container = document.getElementById('pk-table-container');
+  if (!container) return;
+
+  // Fetch locations (with city/state/country context) — global or city-scoped
+  let locQuery = sb.from('parkrun_locations').select('*, cities(id, name, state, country_id)');
+  if (cityId) locQuery = locQuery.eq('city_id', cityId);
+  const { data: locations, error: locErr } = await locQuery;
+  if (locErr) console.error('parkrun_locations (table) error', locErr);
+
+  const locs = locations || [];
+  if (locs.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="es-icon">🏃</div>
+        <div class="es-text">No parkrun locations logged yet${cityId ? ' in this city' : ''}.</div>
+      </div>`;
+    return;
+  }
+
+  // Fetch all results for these locations in one go
+  const locIds = locs.map(l => l.id);
+  const { data: results, error: resErr } = await sb.from('parkrun_results').select('*').in('location_id', locIds);
+  if (resErr) console.error('parkrun_results (table) error', resErr);
+  const allResults = results || [];
+
+  // Build country lookup for global view (state already comes from city)
+  const countryNames = {};
+  if (!cityId && countriesCache) {
+    countriesCache.forEach(c => countryNames[c.id] = c.name);
+  }
+
+  // Build flat rows: one row per result (done), plus one row per location with zero results (pending)
+  let rows = [];
+  locs.forEach(loc => {
+    const locResults = allResults.filter(r => r.location_id === loc.id);
+    const cityName = loc.cities ? loc.cities.name : '';
+    const stateName = loc.cities ? loc.cities.state : '';
+    const countryName = loc.cities ? countryNames[loc.cities.country_id] : '';
+
+    if (locResults.length === 0) {
+      rows.push({ done: false, loc, cityName, stateName, countryName, result: null });
+    } else {
+      // Use best result (fastest finish_time); fall back to most recent if no time
+      function toSecsLocal(t) {
+        if (!t) return Infinity;
+        const p = t.split(':').map(Number);
+        return p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p[0]*60+p[1];
+      }
+      const best = locResults.reduce((b, r) => toSecsLocal(r.finish_time) < toSecsLocal(b.finish_time) ? r : b);
+      rows.push({ done: true, loc, cityName, stateName, countryName, result: best, runCount: locResults.length });
+    }
+  });
+
+  pkAllRowsCache = rows;
+
+  if (!cityId) {
+    // GLOBAL VIEW: render stats panels + filters + filtered table
+    renderParkrunStatsPanel(rows);
+    renderParkrunFilters(rows);
+    applyParkrunFiltersAndRender();
+  } else {
+    // CITY VIEW: simple table, no filters/stats (unchanged behaviour)
+    renderParkrunTableHTML(rows, { showLocationCol: false });
+  }
+}
+
+// ── STATS PANEL (global view only) ──
+function renderParkrunStatsPanel(rows) {
+  const panel = document.getElementById('pk-stats-panel');
+  if (!panel) return;
+
+  const totalLocations = rows.length;
+  const doneRows       = rows.filter(r => r.done);
+  const completedCount = doneRows.length;
+  const pendingCount   = totalLocations - completedCount;
+  const pctDone        = totalLocations > 0 ? ((completedCount / totalLocations) * 100).toFixed(2) : '0.00';
+
+  function toSecs(t) {
+    if (!t) return Infinity;
+    const p = t.split(':').map(Number);
+    return p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p[0]*60+p[1];
+  }
+
+  // ── Best parkrun ──
+  let bestRow = null;
+  doneRows.forEach(row => {
+    const s = toSecs(row.result.finish_time);
+    if (!bestRow || s < toSecs(bestRow.result.finish_time)) bestRow = row;
+  });
+  const bestTime = bestRow ? (bestRow.result.finish_time || '–') : '–';
+  const bestPace = bestRow ? (bestRow.result.pace || '–') : '–';
+  const bestDate = bestRow ? formatDate(bestRow.result.run_date || '') : '–';
+  const bestName = bestRow ? toTitleCase(bestRow.loc.name) : '–';
+
+  // ── Best km split overall ──
+  let bestKmSecs = Infinity, bestKmLabel = '–', bestKmLoc = '–', bestKmDate = '–';
+  doneRows.forEach(row => {
+    const r = row.result;
+    ['km1_time','km2_time','km3_time','km4_time','km5_time'].forEach((k, i) => {
+      const t = r[k]; if (!t) return;
+      const s = toSecs(t);
+      if (s < bestKmSecs) {
+        bestKmSecs  = s;
+        bestKmLabel = 'km' + (i+1) + ' — ' + t;
+        bestKmLoc   = toTitleCase(row.loc.name);
+        bestKmDate  = formatDate(r.run_date || '');
+      }
+    });
+  });
+
+  // ── Time distribution: floor(mins) so 24:09 → 24 ──
+  const timeBuckets = { '24': 0, '25': 0, '26': 0, '27': 0, '28': 0, '29': 0, '30+': 0 };
+  doneRows.forEach(row => {
+    const t = row.result.finish_time; if (!t) return;
+    const p = t.split(':').map(Number);
+    const floorMins = p[0]; // MM:SS — integer minutes
+    if (floorMins <= 24)     timeBuckets['24']++;
+    else if (floorMins === 25) timeBuckets['25']++;
+    else if (floorMins === 26) timeBuckets['26']++;
+    else if (floorMins === 27) timeBuckets['27']++;
+    else if (floorMins === 28) timeBuckets['28']++;
+    else if (floorMins === 29) timeBuckets['29']++;
+    else                       timeBuckets['30+']++;
+  });
+
+  // ── Km pace distribution: floor(mins) so 4:59 → bucket 4 ──
+  const kmBuckets = { '4': 0, '5': 0, '6': 0, '7': 0, '8+': 0 };
+  doneRows.forEach(row => {
+    const r = row.result;
+    ['km1_time','km2_time','km3_time','km4_time','km5_time'].forEach(k => {
+      const t = r[k]; if (!t) return;
+      const p = t.split(':').map(Number);
+      const floorMins = p[0];
+      if (floorMins <= 4)     kmBuckets['4']++;
+      else if (floorMins === 5) kmBuckets['5']++;
+      else if (floorMins === 6) kmBuckets['6']++;
+      else if (floorMins === 7) kmBuckets['7']++;
+      else                      kmBuckets['8+']++;
+    });
+  });
+
+  // ── State breakdown sorted by % done desc ──
+  const stateLocMap = {}, stateDoneLocMap = {};
+  rows.forEach(row => {
+    const s = row.stateName || '—';
+    if (!stateLocMap[s]) stateLocMap[s] = new Set();
+    stateLocMap[s].add(row.loc.id);
+    if (row.done) {
+      if (!stateDoneLocMap[s]) stateDoneLocMap[s] = new Set();
+      stateDoneLocMap[s].add(row.loc.id);
+    }
+  });
+  const stateKeys = Object.keys(stateLocMap).sort((a, b) => {
+    const ta = stateLocMap[a].size, tb = stateLocMap[b].size;
+    const da = stateDoneLocMap[a] ? stateDoneLocMap[a].size : 0;
+    const db = stateDoneLocMap[b] ? stateDoneLocMap[b].size : 0;
+    const pctA = ta > 0 ? da/ta : 0, pctB = tb > 0 ? db/tb : 0;
+    return pctB !== pctA ? pctB - pctA : tb - ta;
+  });
+  const stateTableRows = stateKeys.map(s => {
+    const total = stateLocMap[s].size;
+    const done  = stateDoneLocMap[s] ? stateDoneLocMap[s].size : 0;
+    const pct   = total > 0 ? ((done/total)*100).toFixed(2) : '0.00';
+    return `<tr>
+      <td style="text-align:left;font-weight:600;padding:8px 12px">${s}</td>
+      <td style="text-align:center;padding:8px 12px">${total}</td>
+      <td style="text-align:center;padding:8px 12px;color:var(--green);font-weight:700">${done}</td>
+      <td style="text-align:center;padding:8px 12px;color:#d03030;font-weight:700">${total-done}</td>
+      <td style="text-align:center;padding:8px 12px;color:var(--blue);font-weight:700">${pct}%</td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="pk-stats-grid">
+      <div class="pk-stat-box">
+        <div class="pk-stat-value">${totalLocations}</div>
+        <div class="pk-stat-label">Total Parkruns</div>
+      </div>
+      <div class="pk-stat-box">
+        <div class="pk-stat-value pk-stat-green">${completedCount}</div>
+        <div class="pk-stat-label">Completed</div>
+      </div>
+      <div class="pk-stat-box">
+        <div class="pk-stat-value pk-stat-muted">${pendingCount}</div>
+        <div class="pk-stat-label">Pending</div>
+      </div>
+      <div class="pk-stat-box">
+        <div class="pk-stat-value pk-stat-blue">${pctDone}%</div>
+        <div class="pk-stat-label">% Completed</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+      <div class="pk-stat-box" style="border-left:4px solid var(--green)">
+        <div class="pk-mini-table-title" style="margin-bottom:10px">🏆 Best Parkrun</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;color:var(--green)">${bestTime}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">Pace: <b style="color:var(--text)">${bestPace}</b> · ${bestDate}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${bestName}</div>
+      </div>
+      <div class="pk-stat-box" style="border-left:4px solid var(--blue)">
+        <div class="pk-mini-table-title" style="margin-bottom:10px">⚡ Best km Split</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--blue)">${bestKmSecs < Infinity ? bestKmLabel : '–'}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">${bestKmDate}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${bestKmLoc}</div>
+      </div>
+    </div>
+
+    <div class="pk-mini-table-wrap" style="margin-bottom:20px">
+      <div class="pk-mini-table-title">Breakdown by State</div>
+      <table class="pk-mini-table" style="width:100%">
+        <thead><tr>
+          <th style="text-align:left;padding:8px 12px">State</th>
+          <th style="text-align:center;padding:8px 12px">Total</th>
+          <th style="text-align:center;padding:8px 12px;color:var(--green)">Done</th>
+          <th style="text-align:center;padding:8px 12px;color:#d03030">Pending</th>
+          <th style="text-align:center;padding:8px 12px;color:var(--blue)">% Done</th>
+        </tr></thead>
+        <tbody>${stateTableRows}</tbody>
+      </table>
+    </div>
+
+    <div class="pk-mini-tables">
+      <div class="pk-mini-table-wrap">
+        <div class="pk-mini-table-title">Finish Time Distribution (min)</div>
+        <table class="pk-mini-table">
+          <thead><tr>${Object.keys(timeBuckets).map(k => `<th>${k}</th>`).join('')}</tr></thead>
+          <tbody><tr>${Object.values(timeBuckets).map(v => `<td>${v}</td>`).join('')}</tr></tbody>
+        </table>
+      </div>
+      <div class="pk-mini-table-wrap">
+        <div class="pk-mini-table-title">Km Pace Distribution (min/km)</div>
+        <table class="pk-mini-table">
+          <thead><tr>${Object.keys(kmBuckets).map(k => `<th>${k}min/km</th>`).join('')}<th style="color:var(--blue)">Total</th></tr></thead>
+          <tbody><tr>${Object.values(kmBuckets).map(v => `<td>${v}</td>`).join('')}<td style="color:var(--blue)">${completedCount * 5}</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ── FILTERS (global view only) ──
+function renderParkrunFilters(rows) {
+  const filterEl = document.getElementById('pk-filters-bar');
+  if (!filterEl) return;
+
+  const countries = [...new Set(rows.map(r => r.countryName).filter(Boolean))].sort();
+  const states = [...new Set(rows.map(r => r.stateName).filter(Boolean))].sort();
+  const cities = [...new Set(rows.map(r => r.cityName).filter(Boolean))].sort();
+
+  filterEl.innerHTML = `
+    <select class="pk-filter-select" id="pk-filter-country" onchange="updatePkFilter('country', this.value)">
+      <option value="">All Countries</option>
+      ${countries.map(c => `<option value="${c}" ${pkCurrentFilters.country===c?'selected':''}>${c}</option>`).join('')}
+    </select>
+    <select class="pk-filter-select" id="pk-filter-state" onchange="updatePkFilter('state', this.value)">
+      <option value="">All States</option>
+      ${states.map(s => `<option value="${s}" ${pkCurrentFilters.state===s?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <select class="pk-filter-select" id="pk-filter-city" onchange="updatePkFilter('city', this.value)">
+      <option value="">All Cities</option>
+      ${cities.map(c => `<option value="${c}" ${pkCurrentFilters.city===c?'selected':''}>${c}</option>`).join('')}
+    </select>
+    <select class="pk-filter-select" id="pk-filter-status" onchange="updatePkFilter('status', this.value)">
+      <option value="">All Statuses</option>
+      <option value="done" ${pkCurrentFilters.status==='done'?'selected':''}>✓ Completed only</option>
+      <option value="pending" ${pkCurrentFilters.status==='pending'?'selected':''}>○ Pending only</option>
+    </select>
+    ${(pkCurrentFilters.country || pkCurrentFilters.state || pkCurrentFilters.city || pkCurrentFilters.status) ?
+      `<button class="btn-cancel" style="padding:8px 14px" onclick="clearPkFilters()">Clear filters</button>` : ''}
+  `;
+}
+
+function updatePkFilter(key, value) {
+  pkCurrentFilters[key] = value;
+  applyParkrunFiltersAndRender();
+  renderParkrunFilters(pkAllRowsCache); // re-render to update "Clear filters" visibility
+}
+
+function clearPkFilters() {
+  pkCurrentFilters = { country: '', city: '', state: '', status: '' };
+  applyParkrunFiltersAndRender();
+  renderParkrunFilters(pkAllRowsCache);
+}
+
+function applyParkrunFiltersAndRender() {
+  if (!pkAllRowsCache) return;
+  let filtered = pkAllRowsCache;
+  if (pkCurrentFilters.country) filtered = filtered.filter(r => r.countryName === pkCurrentFilters.country);
+  if (pkCurrentFilters.state)   filtered = filtered.filter(r => r.stateName === pkCurrentFilters.state);
+  if (pkCurrentFilters.city)    filtered = filtered.filter(r => r.cityName === pkCurrentFilters.city);
+  if (pkCurrentFilters.status === 'done')    filtered = filtered.filter(r => r.done);
+  if (pkCurrentFilters.status === 'pending') filtered = filtered.filter(r => !r.done);
+  renderParkrunTableHTML(filtered, { showLocationCol: true });
+}
+
+// ── TABLE HTML RENDERER (shared by city view and global view) ──
+function renderParkrunTableHTML(rows, { showLocationCol }) {
+  const container = document.getElementById('pk-table-container');
+  if (!container) return;
+
+  // Sort: done rows by date (most recent first), then pending rows alphabetically
+  const doneRows = rows.filter(r => r.done).sort((a, b) => (b.result.run_date || '').localeCompare(a.result.run_date || ''));
+  const pendingRows = rows.filter(r => !r.done).sort((a, b) => a.loc.name.localeCompare(b.loc.name));
+  const sortedRows = [...doneRows, ...pendingRows];
+
+  if (sortedRows.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="es-icon">🔍</div>
+        <div class="es-text">No parkruns match the selected filters.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table class="pk-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Parkrun</th>
+            ${showLocationCol ? `<th>State</th><th class="pk-th-left">City</th>` : ''}
+            <th>Date</th>
+            <th style="border-left:2px solid var(--border);color:#b45309">Time</th>
+            <th style="color:#b45309">Pace</th>
+            <th style="color:#b45309;border-right:2px solid var(--border)">Elev.</th>
+            <th style="border-left:2px solid var(--border)">Km1</th><th>Km2</th><th>Km3</th><th>Km4</th><th style="border-right:2px solid var(--border)">Km5</th>
+            <th style="border-left:2px solid var(--border);color:#7c3aed">Runners</th>
+            <th style="color:#7c3aed">Pos</th>
+            <th style="color:#7c3aed;border-right:2px solid var(--border)">Top%</th>
+            <th style="border-left:2px solid var(--border);color:#0d9488">Men</th>
+            <th style="color:#0d9488">Pos ♂</th>
+            <th style="color:#0d9488;border-right:2px solid var(--border)">Top% ♂</th>
+            <th style="border-left:2px solid var(--border);color:#ea580c">Cat</th>
+            <th style="color:#ea580c">Cat Size</th>
+            <th style="color:#ea580c">Pos Cat</th>
+            <th style="color:#ea580c;border-right:2px solid var(--border)">Top% Cat</th>
+            <th style="color:#555">Age Grade</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sortedRows.map(row => {
+            const r = row.result;
+            const rowClass = row.done ? 'pk-done' : 'pk-pending';
+            const dot = row.done
+              ? `<span class="pk-status-dot pk-status-done"></span>`
+              : `<span class="pk-status-dot pk-status-pending"></span>`;
+            const kmExtremes = row.done
+              ? getKmExtremes([r.km1_time, r.km2_time, r.km3_time, r.km4_time, r.km5_time])
+              : { fastestIdx: null, slowestIdx: null };
+            return `
+            <tr class="${rowClass}">
+              <td>${dot}</td>
+              <td class="pk-name">${toTitleCase(row.loc.name)}</td>
+              ${showLocationCol ? `<td class="pk-state">${row.stateName || '–'}</td><td class="pk-cityname">${toTitleCase(row.cityName) || '–'}</td>` : ''}
+              <td>${row.done ? formatDate(r.run_date) : '–'}</td>
+              <td class="pk-time" style="border-left:2px solid var(--border)">${row.done ? r.finish_time : '–'}</td>
+              <td >${row.done ? (r.pace || '–') : '–'}</td>
+              <td style="border-right:2px solid var(--border)">${row.done ? (r.elevation_m != null ? r.elevation_m + 'm' : '–') : '–'}</td>
+              <td class="${kmCellClass(0, kmExtremes)}" style="border-left:2px solid var(--border)">${row.done ? (r.km1_time || '–') : '–'}</td>
+              <td class="${kmCellClass(1, kmExtremes)}">${row.done ? (r.km2_time || '–') : '–'}</td>
+              <td class="${kmCellClass(2, kmExtremes)}">${row.done ? (r.km3_time || '–') : '–'}</td>
+              <td class="${kmCellClass(3, kmExtremes)}">${row.done ? (r.km4_time || '–') : '–'}</td>
+              <td class="${kmCellClass(4, kmExtremes)}" style="border-right:2px solid var(--border)">${row.done ? (r.km5_time || '–') : '–'}</td>
+              <td style="border-left:2px solid var(--border)">${row.done ? (r.total_runners ?? '–') : '–'}</td>
+              <td >${row.done ? (r.my_position ?? '–') : '–'}</td>
+              <td style="border-right:2px solid var(--border)">${row.done ? (r.my_position_pct != null ? parseFloat(r.my_position_pct).toFixed(2) + '%' : '–') : '–'}</td>
+              <td style="border-left:2px solid var(--border)">${row.done ? (r.total_men ?? '–') : '–'}</td>
+              <td >${row.done ? (r.my_position_men ?? '–') : '–'}</td>
+              <td style="border-right:2px solid var(--border)">${row.done ? (r.my_position_men_pct != null ? parseFloat(r.my_position_men_pct).toFixed(2) + '%' : '–') : '–'}</td>
+              <td style="border-left:2px solid var(--border)">${row.done ? (r.age_category || '–') : '–'}</td>
+              <td >${row.done ? (r.total_age_category ?? '–') : '–'}</td>
+              <td >${row.done ? (r.my_position_age_category ?? '–') : '–'}</td>
+              <td style="border-right:2px solid var(--border)">${row.done ? (r.my_position_age_category_pct != null ? parseFloat(r.my_position_age_category_pct).toFixed(2) + '%' : '–') : '–'}</td>
+              <td >${row.done ? (r.age_grade != null ? parseFloat(r.age_grade).toFixed(2) + '%' : '–') : '–'}</td>
+              <td><button class="pk-add-inline" onclick="openParkrunResultForm(${row.loc.id})">+ Add</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════
+// PARKRUN DATA LOADING
+// ════════════════════════════════════════
+let parkrunLocationsCache = {};   // id -> location row
+let parkrunLocationsByCity = {};  // cityId -> array of location rows
+let parkrunResultsCache = {};     // locationId -> array of result rows
+
+async function loadParkrunLocations(cityId) {
+  if (parkrunLocationsByCity[cityId]) return parkrunLocationsByCity[cityId];
+  const { data, error } = await sb.from('parkrun_locations').select('*').eq('city_id', cityId).order('name');
+  if (error) console.error('parkrun_locations error', error);
+  const rows = data || [];
+  parkrunLocationsByCity[cityId] = rows;
+  rows.forEach(r => parkrunLocationsCache[r.id] = r);
+  return rows;
+}
+
+async function loadParkrunResults(locationId) {
+  if (parkrunResultsCache[locationId]) return parkrunResultsCache[locationId];
+  const { data, error } = await sb.from('parkrun_results').select('*').eq('location_id', locationId).order('run_date', { ascending: false });
+  if (error) console.error('parkrun_results error', error);
+  parkrunResultsCache[locationId] = data || [];
+  return parkrunResultsCache[locationId];
+}
+
+// ════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════
+function closeModal() {
+  document.getElementById('modal-root').innerHTML = '';
+}
+
+function showModal(html) {
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target === this) closeModal()">
+      <div class="modal-box">${html}</div>
+    </div>`;
+}
+
+// ════════════════════════════════════════
+// FORM: ADD CITY
+// ════════════════════════════════════════
+function openCityForm(countryId) {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">+ Add City</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="city-form-error"></div>
+      <div class="form-group">
+        <label class="form-label">City Name</label>
+        <input class="form-input" id="city-name" placeholder="e.g. Brisbane" autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">State <span class="optional">(optional, mainly for Australia)</span></label>
+        <input class="form-input" id="city-state" placeholder="e.g. Queensland">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Population <span class="optional">(optional)</span></label>
+        <input class="form-input" id="city-population" type="number" placeholder="e.g. 2560000">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="city-save-btn" onclick="submitCityForm(${countryId})">Save City</button>
+    </div>
+  `);
+}
+
+async function submitCityForm(countryId) {
+  const rawCityName = document.getElementById('city-name').value.trim();
+  const name = rawCityName.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const state_ = document.getElementById('city-state').value.trim();
+  const population = document.getElementById('city-population').value;
+  const errorEl = document.getElementById('city-form-error');
+  const btn = document.getElementById('city-save-btn');
+
+  if (!name) {
+    errorEl.innerHTML = `<div class="form-error">City name is required.</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const { error } = await sb.from('cities').insert({
+    country_id: countryId,
+    name: name,
+    state: state_ || null,
+    population: population ? parseInt(population) : null
+  });
+
+  if (error) {
+    errorEl.innerHTML = `<div class="form-error">Error: ${error.message}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Save City';
+    return;
+  }
+
+  delete citiesCache[countryId];
+  closeModal();
+  render();
+}
+
+// ════════════════════════════════════════
+// FORM: ADD PARKRUN LOCATION
+// ════════════════════════════════════════
+function findCityById(cityId) {
+  for (const key in citiesCache) {
+    const found = citiesCache[key].find(c => c.id === cityId);
+    if (found) return found;
+  }
+  return null;
+}
+
+function openParkrunLocationForm(cityId) {
+  const city = findCityById(cityId);
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">+ Add Parkrun Location</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="loc-form-error"></div>
+      <div class="form-group">
+        <label class="form-label">Parkrun Name</label>
+        <input class="form-input" id="loc-name" placeholder="e.g. South Bank Parkrun" autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">City / State</label>
+        <div style="font-size:13.5px; color:var(--muted); padding:10px 12px; background:var(--bg); border-radius:7px">
+          📍 ${city ? city.name + (city.state ? ' · ' + city.state : '') : 'Unknown city'}
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="loc-save-btn" onclick="submitParkrunLocationForm(${cityId})">Save Location</button>
+    </div>
+  `);
+}
+
+async function submitParkrunLocationForm(cityId) {
+  const rawLocName = document.getElementById('loc-name').value.trim();
+  const name = rawLocName.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const city = findCityById(cityId);
+  const errorEl = document.getElementById('loc-form-error');
+  const btn = document.getElementById('loc-save-btn');
+
+  if (!name) {
+    errorEl.innerHTML = `<div class="form-error">Parkrun name is required.</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const { error } = await sb.from('parkrun_locations').insert({
+    city_id: cityId,
+    name: name,
+    state: city ? (city.state || null) : null
+  });
+
+  if (error) {
+    errorEl.innerHTML = `<div class="form-error">Error: ${error.message}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Save Location';
+    return;
+  }
+
+  delete parkrunLocationsByCity[cityId];
+  statsLoaded = false;
+  closeModal();
+  render();
+}
+
+// ════════════════════════════════════════
+// FORM: ADD PARKRUN RESULT
+// ════════════════════════════════════════
+function maskTime(input) {
+  // Strip everything except digits, then re-insert the colon as MM:SS
+  let digits = input.value.replace(/\D/g, '');
+  if (digits.length > 4) digits = digits.slice(0, 4);
+  if (digits.length <= 2) {
+    input.value = digits;
+  } else {
+    input.value = digits.slice(0, digits.length - 2) + ':' + digits.slice(-2);
+  }
+}
+
+function calcPace() {
+  const timeStr = document.getElementById('r-time').value.trim();
+  const paceEl = document.getElementById('r-pace');
+  const match = timeStr.match(/^(\d+):(\d{2})$/);
+  if (!match) { paceEl.value = ''; return; }
+  const totalSeconds = parseInt(match[1]) * 60 + parseInt(match[2]);
+  const paceSeconds = totalSeconds / 5; // parkrun is 5km
+  const paceMin = Math.floor(paceSeconds / 60);
+  const paceSec = Math.round(paceSeconds % 60);
+  const paceSecStr = paceSec < 10 ? '0' + paceSec : '' + paceSec;
+  paceEl.value = `${paceMin}:${paceSecStr}`;
+}
+
+function calcPct(totalId, posId, pctId) {
+  const total = parseFloat(document.getElementById(totalId).value);
+  const pos = parseFloat(document.getElementById(posId).value);
+  const pctEl = document.getElementById(pctId);
+  if (!total || !pos || total <= 0) { pctEl.value = ''; return; }
+  // "Top X% of the field" — e.g. total 100, position 10 => you beat 90 people => top 90%
+  const pct = ((total - pos) / total) * 100;
+  pctEl.value = pct.toFixed(2);
+}
+
+function openParkrunResultForm(locationId) {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">+ Add Parkrun Result</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="result-form-error"></div>
+
+      <div class="form-section-title">Basics</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" id="r-date" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Finish Time</label>
+          <input class="form-input" id="r-time" placeholder="e.g. 24:09" maxlength="5" oninput="maskTime(this); calcPace();">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Pace <span class="optional">(auto-calculated)</span></label>
+          <input class="form-input" id="r-pace" placeholder="e.g. 4:50" readonly style="background:var(--bg)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Elevation (m) <span class="optional">(optional)</span></label>
+          <input class="form-input" id="r-elevation" type="number" placeholder="e.g. 12">
+        </div>
+      </div>
+      <div class="form-row">
+        <div></div>
+        <div></div>
+      </div>
+
+      <div class="form-section-title">Km Splits <span class="optional">(optional)</span></div>
+      <div class="form-row-5">
+        <input class="form-input" id="r-km1" placeholder="4:50" maxlength="5" oninput="maskTime(this)">
+        <input class="form-input" id="r-km2" placeholder="4:50" maxlength="5" oninput="maskTime(this)">
+        <input class="form-input" id="r-km3" placeholder="4:50" maxlength="5" oninput="maskTime(this)">
+        <input class="form-input" id="r-km4" placeholder="4:50" maxlength="5" oninput="maskTime(this)">
+        <input class="form-input" id="r-km5" placeholder="4:50" maxlength="5" oninput="maskTime(this)">
+      </div>
+
+      <div class="form-section-title">Overall Field</div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Total Runners</label>
+          <input class="form-input" id="r-total" type="number" oninput="calcPct('r-total','r-pos','r-pos-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">My Position</label>
+          <input class="form-input" id="r-pos" type="number" oninput="calcPct('r-total','r-pos','r-pos-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Top % <span class="optional">(auto)</span></label>
+          <input class="form-input" id="r-pos-pct" type="number" step="0.01" readonly style="background:var(--bg)">
+        </div>
+      </div>
+
+      <div class="form-section-title">Men's Field</div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Total Men</label>
+          <input class="form-input" id="r-total-men" type="number" oninput="calcPct('r-total-men','r-pos-men','r-pos-men-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">My Position</label>
+          <input class="form-input" id="r-pos-men" type="number" oninput="calcPct('r-total-men','r-pos-men','r-pos-men-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Top % <span class="optional">(auto)</span></label>
+          <input class="form-input" id="r-pos-men-pct" type="number" step="0.01" readonly style="background:var(--bg)">
+        </div>
+      </div>
+
+      <div class="form-section-title">Age Category</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category <span class="optional">(e.g. SM35-39)</span></label>
+          <input class="form-input" id="r-age-cat" placeholder="SM35-39" value="SM35-39">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Age Grade % <span class="optional">(optional)</span></label>
+          <input class="form-input" id="r-age-grade" type="number" step="0.01">
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Total in Category</label>
+          <input class="form-input" id="r-total-cat" type="number" oninput="calcPct('r-total-cat','r-pos-cat','r-pos-cat-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">My Position</label>
+          <input class="form-input" id="r-pos-cat" type="number" oninput="calcPct('r-total-cat','r-pos-cat','r-pos-cat-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Top % <span class="optional">(auto)</span></label>
+          <input class="form-input" id="r-pos-cat-pct" type="number" step="0.01" readonly style="background:var(--bg)">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="result-save-btn" onclick="submitParkrunResultForm(${locationId})">Save Result</button>
+    </div>
+  `);
+}
+
+async function submitParkrunResultForm(locationId) {
+  const val = id => document.getElementById(id).value.trim();
+  const numOrNull = id => { const v = val(id); return v === '' ? null : parseFloat(v); };
+  const intOrNull = id => { const v = val(id); return v === '' ? null : parseInt(v); };
+  const strOrNull = id => { const v = val(id); return v === '' ? null : v; };
+
+  const date = val('r-date');
+  const time = val('r-time');
+  const errorEl = document.getElementById('result-form-error');
+  const btn = document.getElementById('result-save-btn');
+
+  if (!date || !time) {
+    errorEl.innerHTML = `<div class="form-error">Date and Finish Time are required.</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const { error } = await sb.from('parkrun_results').insert({
+    location_id: locationId,
+    run_date: date,
+    finish_time: time,
+    pace: strOrNull('r-pace'),
+    elevation_m: numOrNull('r-elevation'),
+    km1_time: strOrNull('r-km1'),
+    km2_time: strOrNull('r-km2'),
+    km3_time: strOrNull('r-km3'),
+    km4_time: strOrNull('r-km4'),
+    km5_time: strOrNull('r-km5'),
+    total_runners: intOrNull('r-total'),
+    my_position: intOrNull('r-pos'),
+    my_position_pct: numOrNull('r-pos-pct'),
+    total_men: intOrNull('r-total-men'),
+    my_position_men: intOrNull('r-pos-men'),
+    my_position_men_pct: numOrNull('r-pos-men-pct'),
+    age_category: strOrNull('r-age-cat'),
+    total_age_category: intOrNull('r-total-cat'),
+    my_position_age_category: intOrNull('r-pos-cat'),
+    my_position_age_category_pct: numOrNull('r-pos-cat-pct'),
+    age_grade: numOrNull('r-age-grade')
+  });
+
+  if (error) {
+    errorEl.innerHTML = `<div class="form-error">Error: ${error.message}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Save Result';
+    return;
+  }
+
+  delete parkrunResultsCache[locationId];
+  statsLoaded = false;
+  closeModal();
+  render();
+  loadHeaderStats();
+}
+
+
+// ════════════════════════════════════════
+// HALF MARATHON — DATA LOADING
+// ════════════════════════════════════════
+let hmRacesCache = {};       // id -> race row
+let hmRacesByCity = {};      // cityId -> array of race rows
+let hmResultsCache = {};     // raceId -> array of result rows
+
+async function loadHMRaces(cityId) {
+  if (hmRacesByCity[cityId]) return hmRacesByCity[cityId];
+  const { data, error } = await sb.from('half_marathon_races').select('*').eq('city_id', cityId).order('name');
+  if (error) console.error('hm_races error', error);
+  const rows = data || [];
+  hmRacesByCity[cityId] = rows;
+  rows.forEach(r => hmRacesCache[r.id] = r);
+  return rows;
+}
+
+async function loadHMResults(raceId) {
+  if (hmResultsCache[raceId]) return hmResultsCache[raceId];
+  const { data, error } = await sb.from('half_marathon_results').select('*').eq('race_id', raceId).order('run_date', { ascending: false });
+  if (error) console.error('hm_results error', error);
+  hmResultsCache[raceId] = data || [];
+  return hmResultsCache[raceId];
+}
+
+// ════════════════════════════════════════
+// HALF MARATHON — MAIN TABLE LOADER
+// ════════════════════════════════════════
+let hmAllRowsCache = null;
+let hmCurrentFilters = { country: '', state: '', city: '', status: '' };
+
+async function renderHalfMarathonTable({ cityId }) {
+  // Fetch all races (global or filtered by city)
+  let racesQuery = sb.from('half_marathon_races').select('*, cities(id, name, state, country_id, countries(id, name, flag_emoji))');
+  if (cityId) racesQuery = racesQuery.eq('city_id', cityId);
+  const { data: races, error: rErr } = await racesQuery.order('name');
+  if (rErr) { console.error(rErr); return; }
+
+  // Fetch best result per race (most recent run_date)
+  const raceIds = (races || []).map(r => r.id);
+  let results = [];
+  if (raceIds.length > 0) {
+    const { data: res } = await sb.from('half_marathon_results').select('*').in('race_id', raceIds).order('run_date', { ascending: false });
+    results = res || [];
+  }
+
+  // Map raceId -> best result (most recent)
+  const bestResult = {};
+  results.forEach(r => {
+    if (!bestResult[r.race_id]) bestResult[r.race_id] = r;
+  });
+
+  // Build rows
+  hmAllRowsCache = (races || []).map(race => {
+    const city = race.cities || {};
+    const country = city.countries || {};
+    return {
+      race,
+      result: bestResult[race.id] || {},
+      done: !!bestResult[race.id],
+      cityName: city.name || '',
+      stateName: city.state || '',
+      countryName: country.name || '',
+      countryFlag: country.flag_emoji || ''
+    };
+  });
+
+  // Stats panel (global view only)
+  const statsPanel = document.getElementById('hm-stats-panel');
+  if (statsPanel) renderHalfMarathonStatsPanel(hmAllRowsCache);
+
+  // Filters (global view only)
+  const filtersBar = document.getElementById('hm-filters-bar');
+  if (filtersBar) renderHMFilters(hmAllRowsCache);
+
+  renderHalfMarathonTableHTML(hmAllRowsCache, { showLocationCol: !cityId });
+}
+
+// ════════════════════════════════════════
+// HALF MARATHON — STATS PANEL
+// ════════════════════════════════════════
+function renderHalfMarathonStatsPanel(rows) {
+  const panel = document.getElementById('hm-stats-panel');
+  if (!panel) return;
+
+  const totalRaces     = rows.length;
+  const doneRows       = rows.filter(r => r.done);
+  const completedCount = doneRows.length;
+  const pendingCount   = totalRaces - completedCount;
+  const pctDone        = totalRaces > 0 ? ((completedCount / totalRaces) * 100).toFixed(2) : '0.00';
+
+  // ── Best race ──
+  function toSecs(t) {
+    if (!t) return Infinity;
+    const p = t.split(':').map(Number);
+    return p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p[0]*60+p[1];
+  }
+  let bestRow = null;
+  doneRows.forEach(row => {
+    const s = toSecs(row.result.finish_time);
+    if (!bestRow || s < toSecs(bestRow.result.finish_time)) bestRow = row;
+  });
+  const bestTime  = bestRow ? (bestRow.result.finish_time || '–') : '–';
+  const bestPace  = bestRow ? (bestRow.result.pace || '–') : '–';
+  const bestDate  = bestRow ? formatDate(bestRow.result.run_date || '') : '–';
+  const bestRace  = bestRow ? toTitleCase(bestRow.race.name) : '–';
+
+  // ── Best km split overall (fastest single km across all results) ──
+  let bestKmTime = Infinity, bestKmLabel = '–', bestKmRace = '–', bestKmDate = '–';
+  doneRows.forEach(row => {
+    const r = row.result;
+    for (let i = 1; i <= 21; i++) {
+      const t = r['km' + i + '_time'];
+      if (!t) continue;
+      const s = toSecs(t);
+      if (s < bestKmTime) {
+        bestKmTime  = s;
+        bestKmLabel = 'km' + i + ' — ' + t;
+        bestKmRace  = toTitleCase(row.race.name);
+        bestKmDate  = formatDate(r.run_date || '');
+      }
+    }
+  });
+
+  // ── State breakdown sorted by % done desc ──
+  const stateLocMap = {}, stateDoneLocMap = {};
+  rows.forEach(row => {
+    const s = row.stateName || '—';
+    if (!stateLocMap[s]) stateLocMap[s] = new Set();
+    stateLocMap[s].add(row.race.id);
+    if (row.done) {
+      if (!stateDoneLocMap[s]) stateDoneLocMap[s] = new Set();
+      stateDoneLocMap[s].add(row.race.id);
+    }
+  });
+  const stateKeys = Object.keys(stateLocMap).sort((a, b) => {
+    const ta = stateLocMap[a].size, tb = stateLocMap[b].size;
+    const da = stateDoneLocMap[a] ? stateDoneLocMap[a].size : 0;
+    const db = stateDoneLocMap[b] ? stateDoneLocMap[b].size : 0;
+    const pctA = ta > 0 ? da/ta : 0, pctB = tb > 0 ? db/tb : 0;
+    return pctB !== pctA ? pctB - pctA : tb - ta;
+  });
+  const stateTableRows = stateKeys.map(s => {
+    const total = stateLocMap[s].size;
+    const done  = stateDoneLocMap[s] ? stateDoneLocMap[s].size : 0;
+    const pct   = total > 0 ? ((done/total)*100).toFixed(2) : '0.00';
+    return '<tr>'
+      + '<td style="text-align:left;font-weight:600;padding:8px 12px">' + s + '</td>'
+      + '<td style="text-align:center;padding:8px 12px">' + total + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;color:var(--green);font-weight:700">' + done + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;color:#d03030;font-weight:700">' + (total-done) + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;color:var(--blue);font-weight:700">' + pct + '%</td>'
+      + '</tr>';
+  }).join('');
+
+  // ── Finish time buckets (HH:MM ranges) ──
+  const timeBuckets = { '<1:50': 0, '1:50-1:59': 0, '2:00-2:09': 0, '2:10-2:19': 0, '2:20+': 0 };
+  doneRows.forEach(row => {
+    const s = toSecs(row.result.finish_time);
+    if (s === Infinity) return;
+    const mins = s / 60;
+    if (mins < 110)      timeBuckets['<1:50']++;
+    else if (mins < 120) timeBuckets['1:50-1:59']++;
+    else if (mins < 130) timeBuckets['2:00-2:09']++;
+    else if (mins < 140) timeBuckets['2:10-2:19']++;
+    else                 timeBuckets['2:20+']++;
+  });
+
+  // ── Km pace buckets (min/km across all km splits) ──
+  const kmBuckets = { '4': 0, '5': 0, '6': 0, '7': 0, '8+': 0 };
+  doneRows.forEach(row => {
+    const r = row.result;
+    for (let i = 1; i <= 21; i++) {
+      const t = r['km' + i + '_time'];
+      if (!t) continue;
+      const p = t.split(':').map(Number);
+      const floorMins = p[0];
+      if (floorMins <= 4)       kmBuckets['4']++;
+      else if (floorMins === 5) kmBuckets['5']++;
+      else if (floorMins === 6) kmBuckets['6']++;
+      else if (floorMins === 7) kmBuckets['7']++;
+      else                      kmBuckets['8+']++;
+    }
+  });
+
+  panel.innerHTML =
+    // ── Top stats grid ──
+    '<div class="hm-stats-grid">'
+    + '<div class="hm-stat-box"><div class="hm-stat-value">' + totalRaces + '</div><div class="hm-stat-label">Total Races</div></div>'
+    + '<div class="hm-stat-box"><div class="hm-stat-value" style="color:var(--green)">' + completedCount + '</div><div class="hm-stat-label">Completed</div></div>'
+    + '<div class="hm-stat-box"><div class="hm-stat-value" style="color:#d03030">' + pendingCount + '</div><div class="hm-stat-label">Pending</div></div>'
+    + '<div class="hm-stat-box"><div class="hm-stat-value hm-stat-green">' + pctDone + '%</div><div class="hm-stat-label">% Done</div></div>'
+    + '</div>'
+
+    // ── Best race highlight ──
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">'
+    + '<div class="hm-stat-box" style="border-left:4px solid var(--green)">'
+    + '<div class="pk-mini-table-title" style="margin-bottom:10px">🏆 Best Time</div>'
+    + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:28px;font-weight:700;color:var(--green)">' + bestTime + '</div>'
+    + '<div style="font-size:13px;color:var(--muted);margin-top:4px">Pace: <b style="color:var(--text)">' + bestPace + '</b> · ' + bestDate + '</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + bestRace + '</div>'
+    + '</div>'
+    + '<div class="hm-stat-box" style="border-left:4px solid var(--blue)">'
+    + '<div class="pk-mini-table-title" style="margin-bottom:10px">⚡ Best km Split</div>'
+    + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:700;color:var(--blue)">' + (bestKmTime < Infinity ? bestKmLabel : '–') + '</div>'
+    + '<div style="font-size:13px;color:var(--muted);margin-top:4px">' + bestKmDate + '</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + bestKmRace + '</div>'
+    + '</div>'
+    + '</div>'
+
+    // ── State breakdown ──
+    + (stateKeys.length > 0
+      ? '<div class="pk-mini-table-wrap" style="margin-bottom:20px">'
+        + '<div class="pk-mini-table-title">Breakdown by State</div>'
+        + '<table class="pk-mini-table" style="width:100%">'
+        + '<thead><tr>'
+        + '<th style="text-align:left;padding:8px 12px">State</th>'
+        + '<th style="text-align:center;padding:8px 12px">Total</th>'
+        + '<th style="text-align:center;padding:8px 12px;color:var(--green)">Done</th>'
+        + '<th style="text-align:center;padding:8px 12px;color:#d03030">Pending</th>'
+        + '<th style="text-align:center;padding:8px 12px;color:var(--blue)">% Done</th>'
+        + '</tr></thead>'
+        + '<tbody>' + stateTableRows + '</tbody>'
+        + '</table></div>'
+      : '')
+
+    // ── Mini distribution tables ──
+    + '<div class="pk-mini-tables">'
+    + '<div class="pk-mini-table-wrap"><div class="pk-mini-table-title">Finish Time Distribution</div>'
+    + '<table class="pk-mini-table"><thead><tr>'
+    + Object.keys(timeBuckets).map(k => '<th>' + k + '</th>').join('')
+    + '</tr></thead><tbody><tr>'
+    + Object.values(timeBuckets).map(v => '<td>' + v + '</td>').join('')
+    + '</tr></tbody></table></div>'
+    + '<div class="pk-mini-table-wrap"><div class="pk-mini-table-title">Km Pace Distribution (min/km)</div>'
+    + '<table class="pk-mini-table"><thead><tr>'
+    + Object.keys(kmBuckets).map(k => '<th>' + k + 'min/km</th>').join('')
+    + '</tr></thead><tbody><tr>'
+    + Object.values(kmBuckets).map(v => '<td>' + v + '</td>').join('')
+    + '</tr></tbody></table></div>'
+    + '</div>';
+}
+
+// ════════════════════════════════════════
+// HALF MARATHON — FILTERS
+// ════════════════════════════════════════
+function renderHMFilters(rows) {
+  const filterEl = document.getElementById('hm-filters-bar');
+  if (!filterEl) return;
+  const countries = [...new Set(rows.map(r => r.countryName).filter(Boolean))].sort();
+  const states    = [...new Set(rows.map(r => r.stateName).filter(Boolean))].sort();
+  const cities    = [...new Set(rows.map(r => r.cityName).filter(Boolean))].sort();
+  filterEl.innerHTML = `
+    <select class="pk-filter-select" onchange="updateHMFilter('country', this.value)">
+      <option value="">All Countries</option>
+      ${countries.map(c => `<option value="${c}" ${hmCurrentFilters.country===c?'selected':''}>${c}</option>`).join('')}
+    </select>
+    <select class="pk-filter-select" onchange="updateHMFilter('state', this.value)">
+      <option value="">All States</option>
+      ${states.map(s => `<option value="${s}" ${hmCurrentFilters.state===s?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <select class="pk-filter-select" onchange="updateHMFilter('city', this.value)">
+      <option value="">All Cities</option>
+      ${cities.map(c => `<option value="${c}" ${hmCurrentFilters.city===c?'selected':''}>${c}</option>`).join('')}
+    </select>
+    <select class="pk-filter-select" onchange="updateHMFilter('status', this.value)">
+      <option value="">All Statuses</option>
+      <option value="done" ${hmCurrentFilters.status==='done'?'selected':''}>✓ Completed only</option>
+      <option value="pending" ${hmCurrentFilters.status==='pending'?'selected':''}>○ Pending only</option>
+    </select>
+    ${(hmCurrentFilters.country||hmCurrentFilters.state||hmCurrentFilters.city||hmCurrentFilters.status)
+      ? `<button class="btn-cancel" style="padding:8px 14px" onclick="clearHMFilters()">Clear filters</button>` : ''}
+  `;
+}
+
+function updateHMFilter(key, value) {
+  hmCurrentFilters[key] = value;
+  applyHMFiltersAndRender();
+  renderHMFilters(hmAllRowsCache);
+}
+
+function clearHMFilters() {
+  hmCurrentFilters = { country: '', state: '', city: '', status: '' };
+  applyHMFiltersAndRender();
+  renderHMFilters(hmAllRowsCache);
+}
+
+function applyHMFiltersAndRender() {
+  if (!hmAllRowsCache) return;
+  let filtered = hmAllRowsCache;
+  if (hmCurrentFilters.country) filtered = filtered.filter(r => r.countryName === hmCurrentFilters.country);
+  if (hmCurrentFilters.state)   filtered = filtered.filter(r => r.stateName === hmCurrentFilters.state);
+  if (hmCurrentFilters.city)    filtered = filtered.filter(r => r.cityName === hmCurrentFilters.city);
+  if (hmCurrentFilters.status === 'done')    filtered = filtered.filter(r => r.done);
+  if (hmCurrentFilters.status === 'pending') filtered = filtered.filter(r => !r.done);
+  renderHalfMarathonTableHTML(filtered, { showLocationCol: true });
+}
+
+// ════════════════════════════════════════
+// HALF MARATHON — TABLE HTML
+// ════════════════════════════════════════
+// Sum consecutive km splits (MM:SS or H:MM:SS) and return formatted time
+function sumKmSplits(r, from, to) {
+  let totalSecs = 0;
+  let hasAny = false;
+  for (let i = from; i <= to; i++) {
+    const t = r['km' + i + '_time'];
+    if (!t) continue;
+    const p = t.split(':').map(Number);
+    totalSecs += p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p[0]*60+p[1];
+    hasAny = true;
+  }
+  if (!hasAny) return '–';
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = totalSecs % 60;
+  if (h > 0) return h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  return m + ':' + String(s).padStart(2,'0');
+}
+
+function hmKmCellClass(idx, extremes) {
+  if (extremes.fastestIdx === idx) return 'hm-km-fast';
+  if (extremes.slowestIdx === idx) return 'hm-km-slow';
+  return '';
+}
+
+function getHMKmExtremes(splits) {
+  const valid = splits.map((s, i) => {
+    if (!s) return null;
+    const p = s.split(':').map(Number);
+    return { idx: i, secs: p[0]*60 + (p[1]||0) };
+  }).filter(Boolean);
+  if (valid.length < 2) return { fastestIdx: null, slowestIdx: null };
+  const fastest = valid.reduce((a, b) => a.secs < b.secs ? a : b);
+  const slowest = valid.reduce((a, b) => a.secs > b.secs ? a : b);
+  return { fastestIdx: fastest.idx, slowestIdx: slowest.idx };
+}
+
+function renderHalfMarathonTableHTML(rows, { showLocationCol }) {
+  const container = document.getElementById('hm-table-container');
+  if (!container) return;
+
+  const doneRows    = rows.filter(r => r.done).sort((a, b) => (b.result.run_date||'').localeCompare(a.result.run_date||''));
+  const pendingRows = rows.filter(r => !r.done).sort((a, b) => a.race.name.localeCompare(b.race.name));
+  const sorted = [...doneRows, ...pendingRows];
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="es-icon">🔍</div><div class="es-text">No races match the selected filters.</div></div>';
+    return;
+  }
+
+  const locationCols = showLocationCol
+    ? '<th>State</th><th class="hm-th-left">City</th><th class="hm-th-left">Country</th>'
+    : '';
+
+  const rows_html = sorted.map(row => {
+    const r = row.result;
+    const cls = row.done ? 'hm-done' : 'hm-pending';
+    const dot = row.done
+      ? '<span class="hm-status-dot hm-status-done"></span>'
+      : '<span class="hm-status-dot hm-status-pending"></span>';
+    const extremes = row.done
+      ? getHMKmExtremes([r.km1_time,r.km2_time,r.km3_time,r.km4_time,r.km5_time,r.km6_time,r.km7_time,r.km8_time,r.km9_time,r.km10_time,r.km11_time,r.km12_time,r.km13_time,r.km14_time,r.km15_time,r.km16_time,r.km17_time,r.km18_time,r.km19_time,r.km20_time,r.km21_time])
+      : { fastestIdx: null, slowestIdx: null };
+    const d = row.done;
+    const locCols = showLocationCol
+      ? '<td class="hm-state">' + (row.stateName||'–') + '</td>'
+        + '<td class="hm-cityname">' + toTitleCase(row.cityName||'–') + '</td>'
+        + '<td>' + (row.countryFlag||'') + ' ' + (row.countryName||'–') + '</td>'
+      : '';
+    return '<tr class="' + cls + '">'
+      + '<td>' + dot + '</td>'
+      + '<td class="hm-name">' + toTitleCase(row.race.name) + '</td>'
+      + locCols
+      + '<td>' + (d ? formatDate(r.run_date) : '–') + '</td>'
+      + '<td class="hm-time" style="border-left:2px solid var(--border)">' + (d ? (r.finish_time||'–') : '–') + '</td>'
+      + '<td >' + (d ? (r.pace||'–') : '–') + '</td>'
+      + '<td style="border-right:2px solid var(--border)">' + (d && r.elevation_m != null ? r.elevation_m + 'm' : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(0, extremes) + '">' + (d ? (r.km1_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(1, extremes) + '">' + (d ? (r.km2_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(2, extremes) + '">' + (d ? (r.km3_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(3, extremes) + '">' + (d ? (r.km4_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(4, extremes) + '">' + (d ? (r.km5_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(5, extremes) + '">' + (d ? (r.km6_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(6, extremes) + '">' + (d ? (r.km7_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(7, extremes) + '">' + (d ? (r.km8_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(8, extremes) + '">' + (d ? (r.km9_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(9, extremes) + '">' + (d ? (r.km10_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(10, extremes) + '">' + (d ? (r.km11_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(11, extremes) + '">' + (d ? (r.km12_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(12, extremes) + '">' + (d ? (r.km13_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(13, extremes) + '">' + (d ? (r.km14_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(14, extremes) + '">' + (d ? (r.km15_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(15, extremes) + '">' + (d ? (r.km16_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(16, extremes) + '">' + (d ? (r.km17_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(17, extremes) + '">' + (d ? (r.km18_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(18, extremes) + '">' + (d ? (r.km19_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(19, extremes) + '">' + (d ? (r.km20_time||'–') : '–') + '</td>'
+      + '<td class="' + hmKmCellClass(20, extremes) + '">' + (d ? (r.km21_time||'–') : '–') + '</td>'
+      + '<td style="border-left:2px solid var(--border);font-weight:700;color:#555">' + (d ? sumKmSplits(r,1,5) : '–') + '</td>'
+      + '<td style="font-weight:700;color:#555">' + (d ? sumKmSplits(r,6,10) : '–') + '</td>'
+      + '<td style="font-weight:700;color:#555">' + (d ? sumKmSplits(r,11,15) : '–') + '</td>'
+      + '<td style="font-weight:700;color:#555">' + (d ? sumKmSplits(r,16,20) : '–') + '</td>'
+      + '<td style="font-weight:800;color:#1d4ed8;border-left:2px solid var(--border)">' + (d ? sumKmSplits(r,1,10) : '–') + '</td>'
+      + '<td style="font-weight:800;color:#1d4ed8;border-right:2px solid var(--border)">' + (d ? sumKmSplits(r,11,20) : '–') + '</td>'
+      + '<td style="border-left:2px solid var(--border)">' + (d ? (r.total_runners ?? '–') : '–') + '</td>'
+      + '<td >' + (d ? (r.my_position ?? '–') : '–') + '</td>'
+      + '<td style="border-right:2px solid var(--border)">' + (d && r.my_position_pct != null ? parseFloat(r.my_position_pct).toFixed(2) + '%' : '–') + '</td>'
+      + '<td style="border-left:2px solid var(--border)">' + (d ? (r.total_men ?? '–') : '–') + '</td>'
+      + '<td >' + (d ? (r.my_position_men ?? '–') : '–') + '</td>'
+      + '<td style="border-right:2px solid var(--border)">' + (d && r.my_position_men_pct != null ? parseFloat(r.my_position_men_pct).toFixed(2) + '%' : '–') + '</td>'
+      + '<td style="border-left:2px solid var(--border)">' + (d ? (r.age_category||'–') : '–') + '</td>'
+      + '<td >' + (d ? (r.total_age_category ?? '–') : '–') + '</td>'
+      + '<td >' + (d ? (r.my_position_age_category ?? '–') : '–') + '</td>'
+      + '<td style="border-right:2px solid var(--border)">' + (d && r.my_position_age_category_pct != null ? parseFloat(r.my_position_age_category_pct).toFixed(2) + '%' : '–') + '</td>'
+      + '<td >' + (d && r.age_grade != null ? parseFloat(r.age_grade).toFixed(2) + '%' : '–') + '</td>'
+      + '<td><button class="hm-add-inline" onclick="openHalfMarathonResultForm(' + row.race.id + ')">+ Add</button></td>'
+      + '</tr>';
+  }).join('');
+
+  container.innerHTML = '<div class="hm-table-wrap"><table class="hm-table"><thead><tr>'
+    + '<th></th><th>Race</th>'
+    + locationCols
+    + '<th>Date</th>'
+    + '<th style="border-left:2px solid var(--border);color:#b45309">Time</th>'
+    + '<th style="color:#b45309">Pace</th>'
+    + '<th style="color:#b45309;border-right:2px solid var(--border)">Elev.</th>'
+    + '<th>km1</th><th>km2</th><th>km3</th><th>km4</th><th>km5</th><th>km6</th><th>km7</th><th>km8</th><th>km9</th><th>km10</th><th>km11</th><th>km12</th><th>km13</th><th>km14</th><th>km15</th><th>km16</th><th>km17</th><th>km18</th><th>km19</th><th>km20</th><th>km21</th>'
+    + '<th style="border-left:2px solid var(--border);color:var(--blue)">0-5km</th><th style="color:var(--blue)">5-10km</th><th style="color:var(--blue)">10-15km</th><th style="color:var(--blue)">15-20km</th><th style="color:#1d4ed8;font-weight:800;border-left:2px solid var(--border)">1-10km</th><th style="color:#1d4ed8;font-weight:800;border-right:2px solid var(--border)">11-20km</th>'
+    + '<th style="border-left:2px solid var(--border);color:#7c3aed">Runners</th>'
+    + '<th style="color:#7c3aed">Pos</th>'
+    + '<th style="color:#7c3aed;border-right:2px solid var(--border)">Top%</th>'
+    + '<th style="border-left:2px solid var(--border);color:#0d9488">Men</th>'
+    + '<th style="color:#0d9488">Pos ♂</th>'
+    + '<th style="color:#0d9488;border-right:2px solid var(--border)">Top% ♂</th>'
+    + '<th style="border-left:2px solid var(--border);color:#ea580c">Cat</th>'
+    + '<th style="color:#ea580c">Cat Size</th>'
+    + '<th style="color:#ea580c">Pos Cat</th>'
+    + '<th style="color:#ea580c;border-right:2px solid var(--border)">Top% Cat</th>'
+    + '<th style="color:#555">Age Grade</th>'
+    + '<th></th>'
+    + '</tr></thead><tbody>' + rows_html + '</tbody></table></div>';
+}
+
+// ════════════════════════════════════════
+// FORM: ADD HALF MARATHON RACE
+// ════════════════════════════════════════
+function openHalfMarathonRaceForm(cityId) {
+  const city = findCityById(cityId);
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🏅 Add Half Marathon Race</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="hmrace-form-error"></div>
+      <div class="form-group">
+        <label class="form-label">Race Name</label>
+        <input class="form-input" id="hmrace-name" placeholder="e.g. Gold Coast Half Marathon" autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">City</label>
+        <div style="font-size:13.5px;color:var(--muted);padding:10px 12px;background:var(--bg);border-radius:7px">
+          📍 ${city ? city.name + (city.state ? ' · ' + city.state : '') : 'Unknown city'}
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="hmrace-save-btn" onclick="submitHalfMarathonRaceForm(${cityId})" style="background:var(--run)">Save Race</button>
+    </div>
+  `);
+}
+
+async function submitHalfMarathonRaceForm(cityId) {
+  const rawName = document.getElementById('hmrace-name').value.trim();
+  const name = rawName.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const errorEl = document.getElementById('hmrace-form-error');
+  const btn = document.getElementById('hmrace-save-btn');
+  if (!name) { errorEl.innerHTML = '<div class="form-error">Race name is required.</div>'; return; }
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const { error } = await sb.from('half_marathon_races').insert({ city_id: cityId, name });
+  if (error) {
+    errorEl.innerHTML = '<div class="form-error">Error: ' + error.message + '</div>';
+    btn.disabled = false; btn.textContent = 'Save Race'; return;
+  }
+  delete hmRacesByCity[cityId];
+  statsLoaded = false;
+  closeModal(); render();
+}
+
+// ════════════════════════════════════════
+// FORM: ADD HALF MARATHON RESULT
+// ════════════════════════════════════════
+function calcHMPace() {
+  const timeStr = document.getElementById('hmr-time').value.trim();
+  const paceEl = document.getElementById('hmr-pace');
+  // Accept H:MM:SS or MM:SS
+  const m3 = timeStr.match(/^(\d+):(\d{2}):(\d{2})$/);
+  const m2 = timeStr.match(/^(\d+):(\d{2})$/);
+  let totalSeconds = null;
+  if (m3) totalSeconds = parseInt(m3[1])*3600 + parseInt(m3[2])*60 + parseInt(m3[3]);
+  else if (m2) totalSeconds = parseInt(m2[1])*60 + parseInt(m2[2]);
+  if (!totalSeconds) { paceEl.value = ''; return; }
+  const paceSeconds = totalSeconds / 21.0975;
+  const paceMin = Math.floor(paceSeconds / 60);
+  const paceSec = Math.round(paceSeconds % 60);
+  paceEl.value = paceMin + ':' + (paceSec < 10 ? '0' : '') + paceSec;
+}
+
+function maskTimeHM(input) {
+  // Allow H:MM:SS or MM:SS
+  let digits = input.value.replace(/\D/g,'');
+  if (digits.length <= 4) {
+    if (digits.length <= 2) input.value = digits;
+    else input.value = digits.slice(0, digits.length-2) + ':' + digits.slice(-2);
+  } else if (digits.length <= 6) {
+    input.value = digits.slice(0,digits.length-4) + ':' + digits.slice(-4,-2) + ':' + digits.slice(-2);
+  }
+}
+
+function openHalfMarathonResultForm(raceId) {
+  const race = hmRacesCache[raceId] || { name: 'Race #' + raceId };
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🏅 Add Result — ${toTitleCase(race.name)}</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="hmresult-form-error"></div>
+
+      <div class="form-section-title">Basics</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" id="hmr-date" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time (H:MM:SS)</label>
+          <input class="form-input" id="hmr-time" placeholder="1:45:30" maxlength="7" oninput="maskTimeHM(this); calcHMPace();">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Pace /km <span class="optional">(auto)</span></label>
+          <input class="form-input" id="hmr-pace" readonly style="background:var(--bg)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Elevation (m) <span class="optional">(optional)</span></label>
+          <input class="form-input" id="hmr-elevation" type="number" placeholder="e.g. 85">
+        </div>
+      </div>
+
+      <div class="form-section-title">Km Splits — km 1 ao 21 <span class="optional">(opcional)</span></div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:12px">
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km1</div><input class="form-input" id="hmr-km1" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km2</div><input class="form-input" id="hmr-km2" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km3</div><input class="form-input" id="hmr-km3" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km4</div><input class="form-input" id="hmr-km4" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km5</div><input class="form-input" id="hmr-km5" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km6</div><input class="form-input" id="hmr-km6" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km7</div><input class="form-input" id="hmr-km7" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km8</div><input class="form-input" id="hmr-km8" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km9</div><input class="form-input" id="hmr-km9" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km10</div><input class="form-input" id="hmr-km10" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km11</div><input class="form-input" id="hmr-km11" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km12</div><input class="form-input" id="hmr-km12" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km13</div><input class="form-input" id="hmr-km13" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km14</div><input class="form-input" id="hmr-km14" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km15</div><input class="form-input" id="hmr-km15" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km16</div><input class="form-input" id="hmr-km16" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km17</div><input class="form-input" id="hmr-km17" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km18</div><input class="form-input" id="hmr-km18" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km19</div><input class="form-input" id="hmr-km19" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km20</div><input class="form-input" id="hmr-km20" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">km21</div><input class="form-input" id="hmr-km21" placeholder="4:55" maxlength="7" oninput="maskTimeHM(this)" style="padding:8px 4px;text-align:center;font-size:13px"></div>
+      </div>
+
+      <div class="form-section-title">Overall Field</div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Total Runners</label>
+          <input class="form-input" id="hmr-total" type="number" oninput="calcPct('hmr-total','hmr-pos','hmr-pos-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">My Position</label>
+          <input class="form-input" id="hmr-pos" type="number" oninput="calcPct('hmr-total','hmr-pos','hmr-pos-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Top % <span class="optional">(auto)</span></label>
+          <input class="form-input" id="hmr-pos-pct" type="number" step="0.01" readonly style="background:var(--bg)">
+        </div>
+      </div>
+
+      <div class="form-section-title">Men's Field</div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Total Men</label>
+          <input class="form-input" id="hmr-total-men" type="number" oninput="calcPct('hmr-total-men','hmr-pos-men','hmr-pos-men-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">My Position</label>
+          <input class="form-input" id="hmr-pos-men" type="number" oninput="calcPct('hmr-total-men','hmr-pos-men','hmr-pos-men-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Top % <span class="optional">(auto)</span></label>
+          <input class="form-input" id="hmr-pos-men-pct" type="number" step="0.01" readonly style="background:var(--bg)">
+        </div>
+      </div>
+
+      <div class="form-section-title">Age Category</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <input class="form-input" id="hmr-age-cat" placeholder="SM35-39" value="SM35-39">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Age Grade % <span class="optional">(optional)</span></label>
+          <input class="form-input" id="hmr-age-grade" type="number" step="0.01">
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Total in Category</label>
+          <input class="form-input" id="hmr-total-cat" type="number" oninput="calcPct('hmr-total-cat','hmr-pos-cat','hmr-pos-cat-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">My Position</label>
+          <input class="form-input" id="hmr-pos-cat" type="number" oninput="calcPct('hmr-total-cat','hmr-pos-cat','hmr-pos-cat-pct')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Top % <span class="optional">(auto)</span></label>
+          <input class="form-input" id="hmr-pos-cat-pct" type="number" step="0.01" readonly style="background:var(--bg)">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="hmresult-save-btn" onclick="submitHalfMarathonResultForm(${raceId})" style="background:var(--run)">Save Result</button>
+    </div>
+  `);
+}
+
+async function submitHalfMarathonResultForm(raceId) {
+  const val = id => document.getElementById(id).value.trim();
+  const numOrNull = id => { const v = val(id); return v === '' ? null : parseFloat(v); };
+  const intOrNull = id => { const v = val(id); return v === '' ? null : parseInt(v); };
+  const strOrNull = id => { const v = val(id); return v === '' ? null : v; };
+
+  const date = val('hmr-date');
+  const time = val('hmr-time');
+  const errorEl = document.getElementById('hmresult-form-error');
+  const btn = document.getElementById('hmresult-save-btn');
+
+  if (!date || !time) {
+    errorEl.innerHTML = '<div class="form-error">Date and Time are required.</div>';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const { error } = await sb.from('half_marathon_results').insert({
+    race_id: raceId,
+    run_date: date,
+    finish_time: time,
+    pace: strOrNull('hmr-pace'),
+    elevation_m: numOrNull('hmr-elevation'),
+    km1_time: strOrNull('hmr-km1'),
+    km2_time: strOrNull('hmr-km2'),
+    km3_time: strOrNull('hmr-km3'),
+    km4_time: strOrNull('hmr-km4'),
+    km5_time: strOrNull('hmr-km5'),
+    km6_time: strOrNull('hmr-km6'),
+    km7_time: strOrNull('hmr-km7'),
+    km8_time: strOrNull('hmr-km8'),
+    km9_time: strOrNull('hmr-km9'),
+    km10_time: strOrNull('hmr-km10'),
+    km11_time: strOrNull('hmr-km11'),
+    km12_time: strOrNull('hmr-km12'),
+    km13_time: strOrNull('hmr-km13'),
+    km14_time: strOrNull('hmr-km14'),
+    km15_time: strOrNull('hmr-km15'),
+    km16_time: strOrNull('hmr-km16'),
+    km17_time: strOrNull('hmr-km17'),
+    km18_time: strOrNull('hmr-km18'),
+    km19_time: strOrNull('hmr-km19'),
+    km20_time: strOrNull('hmr-km20'),
+    km21_time: strOrNull('hmr-km21'),
+    total_runners: intOrNull('hmr-total'),
+    my_position: intOrNull('hmr-pos'),
+    my_position_pct: numOrNull('hmr-pos-pct'),
+    total_men: intOrNull('hmr-total-men'),
+    my_position_men: intOrNull('hmr-pos-men'),
+    my_position_men_pct: numOrNull('hmr-pos-men-pct'),
+    age_category: strOrNull('hmr-age-cat'),
+    total_age_category: intOrNull('hmr-total-cat'),
+    my_position_age_category: intOrNull('hmr-pos-cat'),
+    my_position_age_category_pct: numOrNull('hmr-pos-cat-pct'),
+    age_grade: numOrNull('hmr-age-grade')
+  });
+
+  if (error) {
+    errorEl.innerHTML = '<div class="form-error">Error: ' + error.message + '</div>';
+    btn.disabled = false; btn.textContent = 'Save Result'; return;
+  }
+
+  delete hmResultsCache[raceId];
+  statsLoaded = false;
+  closeModal(); render(); loadHeaderStats();
+}
+
+loadHeaderStats();
+render();
+</script>
+</body>
+</html>
