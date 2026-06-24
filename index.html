@@ -268,7 +268,7 @@
   /* ── COUNTRY / generic square grid ── */
   .square-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
   }
 
@@ -1458,7 +1458,7 @@ async function render() {
             <div class="region-card-tags">
               <span class="tag tag-travel">✓ ${visited} visited</span>
               ${rs.cities > 0 ? `<span class="tag" style="color:var(--blue)">🏙️ ${rs.citiesVisited||0}/${rs.cities} Cities</span>` : ''}
-              ${rs.hmTotal > 0 ? `<span class="tag tag-run">🏅 ${rs.hm}/${rs.hmTotal} HM</span>` : ''}
+              ${rs.hmTotal > 0 ? `<span class="tag tag-run">🏅 ${rs.hm}/${rs.hmTotal} Half Marathon</span>` : ''}
               ${rs.pkTotal > 0 ? `<span class="tag tag-park">🏃 ${rs.pk}/${rs.pkTotal} Parkrun${rs.pkTotal===1?'':'s'}</span>` : ''}
             </div>
           </div>`;
@@ -1510,7 +1510,7 @@ async function render() {
             <div class="region-card-tags" style="justify-content:center; margin-top:8px; flex-wrap:wrap; gap:4px">
               ${isVisited ? `<span class="tag tag-travel">✓ Visited</span>` : '<span class="tag" style="background:#f4f6f9;color:var(--muted)">Not visited</span>'}
               ${cs.cities > 0 ? `<span class="tag" style="color:var(--blue)">🏙️ ${cs.citiesVisited||0}/${cs.cities} Cities</span>` : ''}
-              ${cs.hmTotal > 0 ? `<span class="tag tag-run">🏅 ${cs.hm}/${cs.hmTotal} HM</span>` : ''}
+              ${cs.hmTotal > 0 ? `<span class="tag tag-run">🏅 ${cs.hm}/${cs.hmTotal} Half Marathon</span>` : ''}
               ${cs.pkTotal > 0 ? `<span class="tag tag-park">🏃 ${cs.pk}/${cs.pkTotal} Parkrun${cs.pkTotal===1?'':'s'}</span>` : ''}
             </div>
           </div>`;
