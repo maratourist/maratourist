@@ -1369,6 +1369,172 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ── STATE ──
+let state = { region: null, country: null, city: null, category: null, sub: null, parkrunLocation: null, globalView: null };
+
+// ── CACHE ──
+let regionsCache = null;
+let countriesCache = null;
+let citiesCache = {};
+let activitiesCache = {};
+let tourismCache = {};
+let parkrunLocationsCache = {};
+
+// ── STATS ──
+let statsLoaded = false;
+let statsLoadingPromise = null;
+let cityStats = {};
+let countryStats = {};
+let regionStats = {};
+
+async function loadRegionsAndCountries() {
+  if (regionsCache && countriesCache) return;
+  const [{ data: regions, error: e1 }, { data: countries, error: e2 }] = await Promise.all([
+    sb.from('regions').select('*'),
+    sb.from('countries').select('*').order('name')
+  ]);
+  if (e1) console.error('regions error', e1);
+  if (e2) console.error('countries error', e2);
+  regionsCache = regions || [];
+  countriesCache = countries || [];
+}
+
+async function loadCities(countryId) {
+  if (citiesCache[countryId]) return citiesCache[countryId];
+  const { data, error } = await sb.from('cities').select('*').eq('country_id', countryId).order('name');
+  if (error) console.error('cities error', error);
+  citiesCache[countryId] = data || [];
+  return citiesCache[countryId];
+}
+
+function findCityById(cityId) {
+  for (const arr of Object.values(citiesCache)) {
+    const c = arr.find(x => x.id === cityId);
+    if (c) return c;
+  }
+  return null;
+}
+
+async function loadActivities(cityId) {
+  if (activitiesCache[cityId]) return activitiesCache[cityId];
+  const { data, error } = await sb.from('activities').select('*').eq('city_id', cityId).order('event_date', { ascending: false });
+  if (error) console.error('activities error', error);
+  activitiesCache[cityId] = data || [];
+  return activitiesCache[cityId];
+}
+
+async function loadTourism(cityId) {
+  if (tourismCache[cityId]) return tourismCache[cityId];
+  const { data, error } = await sb.from('tourism_entries').select('*').eq('city_id', cityId).order('name');
+  if (error) console.error('tourism error', error);
+  tourismCache[cityId] = data || [];
+  return tourismCache[cityId];
+}
+
+async function loadAllStats() {
+  if (statsLoaded) return;
+  if (statsLoadingPromise) return statsLoadingPromise;
+
+  statsLoadingPromise = (async () => {
+    cityStats = {}; countryStats = {}; regionStats = {};
+
+    const [
+      { data: allCities },
+      { data: allHM },
+      { data: allLocations },
+      { data: allResults },
+      { data: allTourism }
+    ] = await Promise.all([
+      sb.from('cities').select('id, country_id'),
+      sb.from('half_marathon_races').select('id, city_id'),
+      sb.from('parkrun_locations').select('id, city_id'),
+      sb.from('parkrun_results').select('location_id'),
+      sb.from('tourism_entries').select('city_id')
+    ]);
+
+    const cities    = allCities    || [];
+    const hmRaces   = allHM        || [];
+    const locations = allLocations || [];
+    const results   = allResults   || [];
+    const tourismRows = allTourism || [];
+
+    const { data: allHMResults } = await sb.from('half_marathon_results').select('race_id');
+    const hmDoneRaceIds = new Set((allHMResults || []).map(r => r.race_id));
+
+    const pkLocPerCity = {};
+    locations.forEach(l => { pkLocPerCity[l.city_id] = (pkLocPerCity[l.city_id] || 0) + 1; });
+
+    const pkDoneLocIds = new Set(results.map(r => r.location_id));
+    const pkDonePerCity = {};
+    locations.forEach(l => {
+      if (pkDoneLocIds.has(l.id)) pkDonePerCity[l.city_id] = (pkDonePerCity[l.city_id] || 0) + 1;
+    });
+
+    const hmPerCity = {};
+    const hmDonePerCity = {};
+    hmRaces.forEach(r => {
+      hmPerCity[r.city_id] = (hmPerCity[r.city_id] || 0) + 1;
+      if (hmDoneRaceIds.has(r.id)) hmDonePerCity[r.city_id] = (hmDonePerCity[r.city_id] || 0) + 1;
+    });
+
+    const tourismPerCity = {};
+    tourismRows.forEach(r => { tourismPerCity[r.city_id] = (tourismPerCity[r.city_id] || 0) + 1; });
+
+    cities.forEach(c => {
+      cityStats[c.id] = {
+        hm: hmDonePerCity[c.id] || 0,
+        hmTotal: hmPerCity[c.id] || 0,
+        pk: pkDonePerCity[c.id] || 0,
+        pkTotal: pkLocPerCity[c.id] || 0,
+        tourism: tourismPerCity[c.id] || 0
+      };
+    });
+
+    cities.forEach(c => {
+      const cid = c.country_id;
+      if (!countryStats[cid]) countryStats[cid] = { hm:0, hmTotal:0, pk:0, pkTotal:0, cities:0, citiesVisited:0, tourism:0 };
+      const cs = cityStats[c.id];
+      const cityVisited = cs.hm > 0 || cs.pk > 0 || cs.tourism > 0;
+      if (cityVisited) countryStats[cid].citiesVisited += 1;
+      countryStats[cid].cities   += 1;
+      countryStats[cid].hm       += cs.hm;
+      countryStats[cid].hmTotal  += cs.hmTotal;
+      countryStats[cid].pk       += cs.pk;
+      countryStats[cid].pkTotal  += cs.pkTotal;
+      countryStats[cid].tourism  += cs.tourism;
+    });
+
+    if (countriesCache) {
+      countriesCache.forEach(country => {
+        const rid = country.region;
+        if (!regionStats[rid]) regionStats[rid] = { hm:0, hmTotal:0, pk:0, pkTotal:0, cities:0, citiesVisited:0, tourism:0 };
+        const cs = countryStats[country.id] || { hm:0, hmTotal:0, pk:0, pkTotal:0, cities:0, citiesVisited:0, tourism:0 };
+        regionStats[rid].hm           += cs.hm;
+        regionStats[rid].hmTotal      += cs.hmTotal;
+        regionStats[rid].pk           += cs.pk;
+        regionStats[rid].pkTotal      += cs.pkTotal;
+        regionStats[rid].cities       += cs.cities;
+        regionStats[rid].citiesVisited+= cs.citiesVisited;
+        regionStats[rid].tourism      += cs.tourism;
+      });
+    }
+
+    statsLoaded = true;
+  })();
+
+  await statsLoadingPromise;
+  statsLoadingPromise = null;
+}
+
+function calcPct(totalId, posId, pctId) {
+  const total = parseFloat(document.getElementById(totalId).value);
+  const pos   = parseFloat(document.getElementById(posId).value);
+  const el    = document.getElementById(pctId);
+  if (total > 0 && pos > 0) el.value = ((pos / total) * 100).toFixed(2);
+  else el.value = '';
+}
+
+
 const tourismMeta = {
   hotels:         { icon: "🏨", name: "Hotels" },
   beaches:        { icon: "🏖️", name: "Beaches" },
