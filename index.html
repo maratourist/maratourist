@@ -1810,6 +1810,167 @@ function kmCellClass(idx, extremes) {
 let pkAllRowsCache = null;
 let pkCurrentFilters = { country: '', city: '', state: '', status: '' };
 
+
+async function loadHeaderStats() {
+  const [
+    { data: allCountries },
+    { data: allCities },
+    { data: pkLocations },
+    { data: pkResults },
+    { data: hmRaces },
+    { data: hmResults },
+    { data: tourismEntries }
+  ] = await Promise.all([
+    sb.from('countries').select('id, visited'),
+    sb.from('cities').select('id, country_id'),
+    sb.from('parkrun_locations').select('id, city_id'),
+    sb.from('parkrun_results').select('location_id'),
+    sb.from('half_marathon_races').select('id, city_id'),
+    sb.from('half_marathon_results').select('race_id'),
+    sb.from('tourism_entries').select('city_id')
+  ]);
+
+  function setStatBox(prefix, total, done) {
+    const t = total ?? 0;
+    const d = Math.min(done ?? 0, t);
+    const pct = t > 0 ? ((d / t) * 100).toFixed(2) : '0.00';
+    document.getElementById('stat-' + prefix + '-total').textContent = t;
+    document.getElementById('stat-' + prefix + '-done').textContent  = d;
+    document.getElementById('stat-' + prefix + '-pend').textContent  = t - d;
+    document.getElementById('stat-' + prefix + '-pct').textContent   = pct + '%';
+  }
+
+  const pkDoneLocIds = new Set((pkResults||[]).map(r => r.location_id));
+  setStatBox('pk', (pkLocations||[]).length, pkDoneLocIds.size);
+
+  const hmDoneRaceIds = new Set((hmResults||[]).map(r => r.race_id));
+  setStatBox('hm', (hmRaces||[]).length, hmDoneRaceIds.size);
+
+  const pkCityIds      = new Set((pkLocations||[]).map(r => r.city_id));
+  const hmCityIds      = new Set((hmRaces||[]).map(r => r.city_id));
+  const tourismCityIds = new Set((tourismEntries||[]).map(r => r.city_id));
+  const visitedCityIds = new Set([
+    ...[...(pkLocations||[])].filter(l => pkDoneLocIds.has(l.id)).map(l => l.city_id),
+    ...[...(hmRaces||[])].filter(r => hmDoneRaceIds.has(r.id)).map(r => r.city_id),
+    ...(tourismEntries||[]).map(r => r.city_id)
+  ]);
+  setStatBox('cities', (allCities||[]).length, visitedCityIds.size);
+
+  const visitedCountryIds = new Set(
+    (allCities||[]).filter(c => visitedCityIds.has(c.id)).map(c => c.country_id)
+  );
+  (allCountries||[]).filter(c => c.visited).forEach(c => visitedCountryIds.add(c.id));
+  setStatBox('countries', (allCountries||[]).length, visitedCountryIds.size);
+}
+
+function go(level, val) {
+  if (level === 'home')     state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:null };
+  if (level === 'region')   state = { region:val, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:null };
+  if (level === 'country')  { state.country = val; state.city=null; state.category=null; state.sub=null; state.parkrunLocation=null; state.globalView=null; }
+  if (level === 'city')     { state.city = val; state.category=null; state.sub=null; state.parkrunLocation=null; }
+  if (level === 'category') { state.category = val; state.sub=null; state.parkrunLocation=null; }
+  if (level === 'sub')      { state.sub = val; state.parkrunLocation=null; }
+  render();
+}
+
+function goDirectRun(sub) {
+  state.category = 'run';
+  state.sub = sub;
+  state.parkrunLocation = null;
+  render();
+}
+
+function goGlobalParkruns() {
+  state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:'parkruns' };
+  render();
+}
+
+function goGlobalHalfMarathons() {
+  state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:'halfmarathons' };
+  render();
+}
+
+function regionMeta(id) { return regionsCache.find(r => r.id === id); }
+function countriesInRegion(id) { return countriesCache.filter(c => c.region === id); }
+
+function updateBreadcrumb(ctx) {
+  const bc = document.getElementById('breadcrumb');
+  let parts = [`<span onclick="go('home')">World</span>`];
+  if (state.globalView === 'parkruns') {
+    parts.push(`<span class="sep">›</span><span class="current">All Parkruns</span>`);
+    bc.innerHTML = parts.join(''); return;
+  }
+  if (state.globalView === 'halfmarathons') {
+    parts.push(`<span class="sep">›</span><span class="current">All Half Marathons</span>`);
+    bc.innerHTML = parts.join(''); return;
+  }
+  if (state.region !== null) {
+    const r = regionMeta(state.region);
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(state.country===null ? `<span class="current">${r.name}</span>` : `<span onclick="go('region','${state.region}')">${r.name}</span>`);
+  }
+  if (state.country !== null && ctx.country) {
+    const c = ctx.country;
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(state.city===null ? `<span class="current">${c.flag_emoji} ${c.name}</span>` : `<span onclick="go('country',${state.country})">${c.flag_emoji} ${c.name}</span>`);
+  }
+  if (state.city !== null && ctx.city) {
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(state.category===null ? `<span class="current">${ctx.city.name}</span>` : `<span onclick="go('city',${state.city})">${ctx.city.name}</span>`);
+  }
+  if (state.category !== null && state.category !== 'run') {
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(state.sub===null ? `<span class="current">Tourism</span>` : `<span onclick="go('category','tourism')">Tourism</span>`);
+  }
+  if (state.sub !== null) {
+    const label = state.category === 'run'
+      ? (state.sub === 'half_marathon' ? 'Half Marathons' : 'Parkruns')
+      : tourismMeta[state.sub].name;
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(`<span class="current">${label}</span>`);
+  }
+  bc.innerHTML = parts.join('');
+}
+
+function loadingHTML() {
+  return `<div class="empty-state"><div class="es-icon">⏳</div><div class="es-text">Loading...</div></div>`;
+}
+
+function toTitleCase(str) {
+  if (!str) return str;
+  return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
+function formatDate(isoDate) {
+  if (!isoDate) return '–';
+  const parts = isoDate.split('-');
+  if (parts.length !== 3) return isoDate;
+  const [y, m, d] = parts;
+  return `${d}/${m}/${y}`;
+}
+
+function flagEmojiToISO(emoji) {
+  if (!emoji) return null;
+  try {
+    const cps = [...emoji].map(c => c.codePointAt(0));
+    const letters = cps.filter(cp => cp >= 0x1F1E6 && cp <= 0x1F1FF)
+                       .map(cp => String.fromCharCode(cp - 0x1F1E6 + 65));
+    if (letters.length === 2) return letters.join('').toLowerCase();
+  } catch(e) {}
+  return null;
+}
+
+function countryFlagImg(flagEmoji, name) {
+  const iso = flagEmojiToISO(flagEmoji);
+  if (!iso) return `<span class="square-flag">${flagEmoji}</span>`;
+  return `<div class="square-flag-img-wrap">
+    <img class="square-flag-img" src="https://flagcdn.com/w80/${iso}.png"
+         srcset="https://flagcdn.com/w160/${iso}.png 2x"
+         alt="${name}" loading="lazy"
+         onerror="this.parentNode.innerHTML='<span style=\\'font-size:36px;\\'>${flagEmoji}</span>'">
+  </div>`;
+}
+
 async function render() {
   const main = document.getElementById('main');
   main.innerHTML = loadingHTML();
