@@ -1058,7 +1058,7 @@
     border-radius: 99px; border: 1px solid var(--border);
   }
   .tourism-table {
-    width: 100%; border-collapse: collapse;
+    width: auto; max-width: 700px; border-collapse: collapse;
     background: var(--card); border-radius: 10px;
     overflow: hidden; box-shadow: var(--shadow);
     font-size: 14px;
@@ -1687,7 +1687,7 @@ function renderTourismTab(city, tourism) {
         <span class="tourism-section-title">${meta.name}</span>
         <span class="tourism-section-count">${visited}/${entries.length} visited</span>
       </div>
-      <table class="tourism-table" style="table-layout:fixed;width:100%;">
+      <table class="tourism-table" style="table-layout:fixed;">
         <thead><tr>
           <th style="width:32px;text-align:center;"></th>
           <th style="text-align:left;">Name</th>
@@ -1965,27 +1965,38 @@ async function renderAllCities() {
   window._allCitiesData = cities;
 
   // Add search box
+  // Build country options
+  const countryOpts = [...new Set(cities.map(c => c.countries?.name).filter(Boolean))].sort()
+    .map(n => `<option value="${n}">${n}</option>`).join('');
+
   container.innerHTML = `
-    <div style="margin-bottom:20px;">
+    <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
       <input type="text" id="city-search" placeholder="🔍 Search cities..."
-        oninput="filterAllCities(this.value)"
-        style="width:100%;padding:12px 16px;font-size:15px;border:1.5px solid var(--border);
+        oninput="filterAllCities()"
+        style="flex:1;min-width:200px;padding:12px 16px;font-size:15px;border:1.5px solid var(--border);
         border-radius:10px;background:var(--card);color:var(--text);outline:none;"
         onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
+      <select id="city-country-filter" onchange="filterAllCities()"
+        style="padding:12px 16px;font-size:14px;border:1.5px solid var(--border);border-radius:10px;
+        background:var(--card);color:var(--text);min-width:160px;">
+        <option value="">All Countries</option>
+        ${countryOpts}
+      </select>
     </div>
     <div id="cities-grid"></div>`;
 
   renderCitiesGrid(cities);
 }
 
-function filterAllCities(query) {
-  const q = query.toLowerCase().trim();
-  const filtered = q
-    ? (window._allCitiesData || []).filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        (c.state || '').toLowerCase().includes(q) ||
-        (c.countries?.name || '').toLowerCase().includes(q))
-    : window._allCitiesData || [];
+function filterAllCities() {
+  const q = (document.getElementById('city-search')?.value || '').toLowerCase().trim();
+  const country = (document.getElementById('city-country-filter')?.value || '');
+  let filtered = window._allCitiesData || [];
+  if (q) filtered = filtered.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    (c.state || '').toLowerCase().includes(q) ||
+    (c.countries?.name || '').toLowerCase().includes(q));
+  if (country) filtered = filtered.filter(c => (c.countries?.name || '') === country);
   renderCitiesGrid(filtered);
 }
 
@@ -2018,10 +2029,10 @@ function renderCitiesGrid(cities) {
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
             ${city.state ? city.state + (pop ? ' · ' : '') : ''}${pop}
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            ${cs.hmTotal > 0 ? `<div style="font-size:13px;"><span class="tag tag-run" style="font-size:12px;">🏅 ${cs.hm}/${cs.hmTotal} Half Marathons</span></div>` : ''}
-            ${cs.pkTotal > 0 ? `<div style="font-size:13px;"><span class="tag tag-park" style="font-size:12px;">🏃 ${cs.pk}/${cs.pkTotal} Parkruns</span></div>` : ''}
-            ${cs.tourismTotal > 0 ? `<div style="font-size:13px;"><span class="tag" style="background:#f0f4ff;color:var(--blue);font-size:12px;">🧭 ${cs.tourism}/${cs.tourismTotal} Things To Do</span></div>` : ''}
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${cs.hmTotal > 0 ? `<span class="tag tag-run" style="align-self:flex-start;">🏅 ${cs.hm}/${cs.hmTotal} Half Marathons</span>` : ''}
+            ${cs.pkTotal > 0 ? `<span class="tag tag-park" style="align-self:flex-start;">🏃 ${cs.pk}/${cs.pkTotal} Parkruns</span>` : ''}
+            ${cs.tourismTotal > 0 ? `<span class="tag" style="background:#f0f4ff;color:var(--blue);align-self:flex-start;">🧭 ${cs.tourism}/${cs.tourismTotal} Things To Do</span>` : ''}
           </div>
         </div>
       </div>`;
@@ -2306,7 +2317,7 @@ async function render() {
     main.innerHTML = '<div class="back-btn" onclick="go(\'home\')">‹ Back to World</div>'
       + '<div class="page-header">'
       + '<div class="page-title">🏙️ All Cities</div>'
-      + '<div class="page-subtitle">Cities with cover photo and description — ready to explore</div>'
+      + '<div class="page-subtitle">Cities I\'ve already visited</div>'
       + '</div>'
       + '<div id="cities-container">Loading...</div>';
     renderAllCities();
