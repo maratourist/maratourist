@@ -1435,7 +1435,7 @@ async function loadAllStats() {
       sb.from('half_marathon_races').select('id, city_id'),
       sb.from('parkrun_locations').select('id, city_id'),
       sb.from('parkrun_results').select('location_id'),
-      sb.from('tourism_entries').select('city_id')
+      sb.from('tourism_entries').select('city_id, visit_date')
     ]);
 
     const cities    = allCities    || [];
@@ -1463,22 +1463,27 @@ async function loadAllStats() {
       if (hmDoneRaceIds.has(r.id)) hmDonePerCity[r.city_id] = (hmDonePerCity[r.city_id] || 0) + 1;
     });
 
-    const tourismPerCity = {};
-    tourismRows.forEach(r => { tourismPerCity[r.city_id] = (tourismPerCity[r.city_id] || 0) + 1; });
+    const tourismPerCity = {};      // all entries (total)
+    const tourismDonePerCity = {};  // entries with visit_date (done)
+    tourismRows.forEach(r => {
+      tourismPerCity[r.city_id] = (tourismPerCity[r.city_id] || 0) + 1;
+    });
 
     cities.forEach(c => {
+      const tDone = (tourismRows || []).filter(r => r.city_id === c.id && r.visit_date).length;
       cityStats[c.id] = {
         hm: hmDonePerCity[c.id] || 0,
         hmTotal: hmPerCity[c.id] || 0,
         pk: pkDonePerCity[c.id] || 0,
         pkTotal: pkLocPerCity[c.id] || 0,
-        tourism: tourismPerCity[c.id] || 0
+        tourism: tDone,
+        tourismTotal: tourismPerCity[c.id] || 0
       };
     });
 
     cities.forEach(c => {
       const cid = c.country_id;
-      if (!countryStats[cid]) countryStats[cid] = { hm:0, hmTotal:0, pk:0, pkTotal:0, cities:0, citiesVisited:0, tourism:0 };
+      if (!countryStats[cid]) countryStats[cid] = { hm:0, hmTotal:0, pk:0, pkTotal:0, cities:0, citiesVisited:0, tourism:0, tourismTotal:0 };
       const cs = cityStats[c.id];
       const cityVisited = cs.hm > 0 || cs.pk > 0 || cs.tourism > 0;
       if (cityVisited) countryStats[cid].citiesVisited += 1;
@@ -1487,7 +1492,8 @@ async function loadAllStats() {
       countryStats[cid].hmTotal  += cs.hmTotal;
       countryStats[cid].pk       += cs.pk;
       countryStats[cid].pkTotal  += cs.pkTotal;
-      countryStats[cid].tourism  += cs.tourism;
+      countryStats[cid].tourism      += cs.tourism;
+      countryStats[cid].tourismTotal += (cs.tourismTotal || 0);
     });
 
     if (countriesCache) {
@@ -1537,8 +1543,15 @@ const tourismMeta = {
   viewpoints:     { icon: "🌅", name: "Viewpoints" },
   wildlife_parks: { icon: "🦘", name: "Wildlife Parks" },
   amusement_parks:{ icon: "🎢", name: "Amusement Parks" },
+  pubs:           { icon: "🍺", name: "Pubs" },
   other:          { icon: "✈️", name: "Other" }
 };
+
+const cuisineTypes = [
+  'Australian','Brazilian','Chinese','French','Greek','Indian',
+  'Italian','Japanese','Korean','Lebanese','Mexican','Seafood',
+  'Spanish','Thai','Turkish','Vietnamese','Burger','Pizza','Other'
+];
 
 
 function showCityTab(tab) {
@@ -1639,21 +1652,26 @@ function renderTourismTab(city, tourism) {
     const entries = tourism.filter(t => t.category === key);
     if (entries.length === 0) return;
     const visited = entries.filter(t => t.visit_date).length;
+    const isRestaurant = key === 'restaurants';
 
     const rows = entries.map(e => {
       const isVisited = !!e.visit_date;
+      const nameCell = e.name + (isRestaurant && e.cuisine ? ` <span style="font-size:11px;color:var(--muted);background:var(--bg);padding:1px 6px;border-radius:4px;margin-left:4px;">${e.cuisine}</span>` : '');
+      const wikiCell = e.link
+        ? `<a href="${e.link}" target="_blank" style="font-size:18px;" title="Wikipedia">📖</a>`
+        : '<span style="color:var(--muted);">—</span>';
       return `<tr>
-        <td style="padding:10px 14px;text-align:center;width:40px;">
+        <td style="width:36px;text-align:center;padding:10px 8px;">
           <span class="${isVisited ? 't-status-done' : 't-status-pending'}">${isVisited ? '✓' : '○'}</span>
         </td>
-        <td style="padding:10px 14px;">
-          <div class="t-name">${e.name}</div>
-          ${e.notes ? `<div class="t-note">${e.notes}</div>` : ''}
+        <td style="padding:10px 12px;min-width:180px;max-width:260px;">
+          <div class="t-name">${nameCell}</div>
+          ${e.notes ? `<div class="t-note" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;">${e.notes}</div>` : ''}
         </td>
-        <td style="padding:10px 14px;white-space:nowrap;" class="t-stars">${starsHTML(e.rating)}</td>
-        <td style="padding:10px 14px;" class="t-date">${e.visit_date ? formatDate(e.visit_date) : '—'}</td>
-        <td style="padding:10px 14px;" class="t-link">${e.link ? `<a href="${e.link}" target="_blank">🔗 Link</a>` : '—'}</td>
-        <td style="padding:10px 14px;text-align:center;">
+        <td style="width:100px;text-align:center;padding:10px 8px;" class="t-stars">${starsHTML(e.rating)}</td>
+        <td style="width:110px;text-align:center;padding:10px 8px;" class="t-date">${e.visit_date ? formatDate(e.visit_date) : '—'}</td>
+        <td style="width:40px;text-align:center;padding:10px 8px;">${wikiCell}</td>
+        <td style="width:70px;text-align:center;padding:10px 8px;">
           <button onclick="openTourismEditForm(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;">✏️</button>
           <button onclick="deleteTourismEntry(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:#d03030;font-size:14px;">🗑</button>
         </td>
@@ -1666,14 +1684,14 @@ function renderTourismTab(city, tourism) {
         <span class="tourism-section-title">${meta.name}</span>
         <span class="tourism-section-count">${visited}/${entries.length} visited</span>
       </div>
-      <table class="tourism-table">
+      <table class="tourism-table" style="table-layout:fixed;width:100%;">
         <thead><tr>
-          <th style="width:40px;text-align:center;"></th>
-          <th>Name</th>
-          <th>Rating</th>
-          <th>Date Visited</th>
-          <th>Link</th>
-          <th style="width:80px;"></th>
+          <th style="width:36px;text-align:center;"></th>
+          <th style="text-align:left;">Name</th>
+          <th style="width:100px;text-align:center;">Rating</th>
+          <th style="width:110px;text-align:center;">Visited</th>
+          <th style="width:40px;text-align:center;">Wiki</th>
+          <th style="width:70px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -1690,6 +1708,7 @@ function openTourismForm(cityId, prefillCat) {
   const catOptions = Object.entries(tourismMeta).map(([key, meta]) =>
     `<option value="${key}" ${prefillCat===key?'selected':''}>${meta.icon} ${meta.name}</option>`
   ).join('');
+  const cuisineOptions = cuisineTypes.map(c => `<option value="${c}">${c}</option>`).join('');
 
   showModal(`
     <div class="modal-header">
@@ -1701,7 +1720,7 @@ function openTourismForm(cityId, prefillCat) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Category</label>
-          <select class="form-input" id="t-category">${catOptions}</select>
+          <select class="form-input" id="t-category" onchange="toggleCuisineField()">${catOptions}</select>
         </div>
         <div class="form-group">
           <label class="form-label">Status</label>
@@ -1714,6 +1733,13 @@ function openTourismForm(cityId, prefillCat) {
       <div class="form-group">
         <label class="form-label">Name</label>
         <input class="form-input" id="t-name" placeholder="e.g. South Bank Parklands" autofocus>
+      </div>
+      <div class="form-group" id="cuisine-field" style="display:none;">
+        <label class="form-label">Cuisine Type</label>
+        <select class="form-input" id="t-cuisine">
+          <option value="">— Select cuisine —</option>
+          ${cuisineOptions}
+        </select>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -1736,10 +1762,6 @@ function openTourismForm(cityId, prefillCat) {
         <label class="form-label">Notes <span class="optional">(optional)</span></label>
         <input class="form-input" id="t-notes" placeholder="Your thoughts...">
       </div>
-      <div class="form-group">
-        <label class="form-label">Link <span class="optional">(optional)</span></label>
-        <input class="form-input" id="t-link" placeholder="https://...">
-      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
@@ -1747,12 +1769,30 @@ function openTourismForm(cityId, prefillCat) {
     </div>
   `);
 
-  // Auto-fill date if visited
   document.getElementById('t-status').addEventListener('change', function() {
     if (this.value === 'visited' && !document.getElementById('t-date').value) {
       document.getElementById('t-date').value = new Date().toISOString().split('T')[0];
     }
   });
+  toggleCuisineField();
+}
+
+function toggleCuisineField() {
+  const cat = document.getElementById('t-category');
+  const field = document.getElementById('cuisine-field');
+  if (cat && field) field.style.display = cat.value === 'restaurants' ? 'block' : 'none';
+}
+
+async function fetchWikiLink(name, cityName) {
+  try {
+    const q = encodeURIComponent(name + ' ' + cityName);
+    const r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + q + '&srlimit=1&format=json&origin=*');
+    const d = await r.json();
+    if (d.query.search.length > 0) {
+      return 'https://en.wikipedia.org/wiki/' + encodeURIComponent(d.query.search[0].title);
+    }
+  } catch(e) {}
+  return null;
 }
 
 async function submitTourismForm(cityId) {
@@ -1762,7 +1802,7 @@ async function submitTourismForm(cityId) {
   const date = document.getElementById('t-date').value || null;
   const rating = document.getElementById('t-rating').value || null;
   const notes = document.getElementById('t-notes').value.trim() || null;
-  const link = document.getElementById('t-link').value.trim() || null;
+  const cuisine = category === 'restaurants' ? (document.getElementById('t-cuisine')?.value || null) : null;
   const errorEl = document.getElementById('tourism-form-error');
   const btn = document.getElementById('tourism-save-btn');
 
@@ -1770,10 +1810,14 @@ async function submitTourismForm(cityId) {
 
   btn.disabled = true; btn.textContent = 'Saving...';
 
+  // Fetch Wikipedia link automatically
+  const { data: cityRow } = await sb.from('cities').select('name').eq('id', cityId).single();
+  const link = await fetchWikiLink(name, cityRow?.name || '');
+
   const { error } = await sb.from('tourism_entries').insert({
     city_id: cityId, name, category,
     visit_date: status === 'visited' ? (date || new Date().toISOString().split('T')[0]) : date,
-    rating, notes, link
+    rating, notes, link, cuisine
   });
 
   if (error) {
@@ -1883,6 +1927,82 @@ async function deleteTourismEntry(entryId, cityId) {
   if (window._cityTabData) window._cityTabData.tourism = freshTourism;
   renderTourismTab({ id: cityId }, freshTourism);
   loadHeaderStats();
+}
+
+
+// ════════════════════════════════════════
+// ALL CITIES — global view
+// ════════════════════════════════════════
+async function renderAllCities() {
+  const container = document.getElementById('cities-container');
+  if (!container) return;
+
+  await loadRegionsAndCountries();
+  await loadAllStats();
+
+  // Fetch all cities with cover_photo AND description set
+  const { data: allCities } = await sb.from('cities')
+    .select('*, countries(id, name, flag_emoji)')
+    .neq('cover_photo', '')
+    .neq('description', '')
+    .order('name');
+
+  const cities = (allCities || []).filter(c => c.cover_photo && c.description);
+
+  if (cities.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="es-icon">🏙️</div><div class="es-text">No cities ready yet.<br>Add a cover photo and description to a city to see it here.</div></div>';
+    return;
+  }
+
+  // Group by country
+  const byCountry = {};
+  cities.forEach(c => {
+    const cname = c.countries?.name || 'Other';
+    if (!byCountry[cname]) byCountry[cname] = { flag: c.countries?.flag_emoji || '', cities: [] };
+    byCountry[cname].cities.push(c);
+  });
+
+  let html = '';
+  Object.entries(byCountry).sort(([a],[b]) => a.localeCompare(b)).forEach(([countryName, group]) => {
+    html += `<div style="margin-bottom:32px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--border);">
+        <span style="font-size:20px;">${group.flag}</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;">${countryName}</span>
+        <span style="font-size:13px;color:var(--muted);">(${group.cities.length} ${group.cities.length===1?'city':'cities'})</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        ${group.cities.map(city => {
+          const cs = cityStats[city.id] || { hm:0, hmTotal:0, pk:0, pkTotal:0, tourism:0, tourismTotal:0 };
+          const pop = city.population ? city.population.toLocaleString() : null;
+          return `<div onclick="go('country',${city.countries?.id});setTimeout(()=>go('city',${city.id}),100);"
+            style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+            box-shadow:var(--shadow);cursor:pointer;transition:all 0.18s;"
+            onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-hover)'"
+            onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)'">
+            <div style="height:160px;overflow:hidden;">
+              <img src="${city.cover_photo}" alt="${city.name}"
+                style="width:100%;height:100%;object-fit:cover;display:block;">
+            </div>
+            <div style="padding:14px 16px;">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:var(--text);margin-bottom:2px;">
+                ${city.name}
+              </div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+                ${city.state ? city.state + ' · ' : ''}${pop ? '👥 ' + pop : ''}
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                ${cs.hmTotal > 0 ? `<span class="tag tag-run">🏅 ${cs.hm}/${cs.hmTotal} HM</span>` : ''}
+                ${cs.pkTotal > 0 ? `<span class="tag tag-park">🏃 ${cs.pk}/${cs.pkTotal} Parkrun</span>` : ''}
+                ${cs.tourismTotal > 0 ? `<span class="tag" style="background:#f0f4ff;color:var(--blue);">🧭 ${cs.tourism}/${cs.tourismTotal}</span>` : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML = html;
 }
 
 // ════════════════════════════════════════
@@ -2038,8 +2158,8 @@ function goGlobalParkruns() {
 }
 
 function goGlobalCities() {
-  // TODO: implement all cities view
-  alert('Coming soon!');
+  state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:'cities' };
+  render();
 }
 
 function goGlobalHalfMarathons() {
@@ -2059,6 +2179,10 @@ function updateBreadcrumb(ctx) {
   }
   if (state.globalView === 'halfmarathons') {
     parts.push(`<span class="sep">›</span><span class="current">All Half Marathons</span>`);
+    bc.innerHTML = parts.join(''); return;
+  }
+  if (state.globalView === 'cities') {
+    parts.push(`<span class="sep">›</span><span class="current">All Cities</span>`);
     bc.innerHTML = parts.join(''); return;
   }
   if (state.region !== null) {
@@ -2134,6 +2258,19 @@ async function render() {
 
   await loadRegionsAndCountries();
   await loadAllStats();
+
+  // GLOBAL VIEW: All Cities
+  if (state.globalView === 'cities') {
+    updateBreadcrumb({});
+    main.innerHTML = '<div class="back-btn" onclick="go(\'home\')">‹ Back to World</div>'
+      + '<div class="page-header">'
+      + '<div class="page-title">🏙️ All Cities</div>'
+      + '<div class="page-subtitle">Cities with cover photo and description — ready to explore</div>'
+      + '</div>'
+      + '<div id="cities-container">Loading...</div>';
+    renderAllCities();
+    return;
+  }
 
   // GLOBAL VIEW: All Half Marathons
   if (state.globalView === 'halfmarathons') {
@@ -2353,9 +2490,19 @@ async function render() {
             + '<td style="text-align:center;padding:10px 14px;color:var(--muted);">' + pop + '</td>'
             + cell(cs.hm, cs.hmTotal)
             + cell(cs.pk, cs.pkTotal)
-            + '<td style="text-align:center;padding:10px 14px;">'
-            + (cs.tourism > 0 ? '<span style="color:var(--blue);font-weight:700;">' + cs.tourism + '</span>' : '<span style="color:var(--muted);">—</span>')
-            + '</td>'
+            + (function() {
+              const done = cs.tourism || 0;
+              const total = cs.tourismTotal || 0;
+              if (total === 0) return '<td style="text-align:center;padding:10px 14px;color:var(--muted);">—</td>';
+              const pct = ((done/total)*100).toFixed(0);
+              const doneColor = done === 0 ? '#d03030' : 'var(--blue)';
+              return '<td style="text-align:center;padding:10px 14px;">'
+                + '<span style="color:' + doneColor + ';font-weight:700;">' + done + '</span>'
+                + '<span style="color:var(--muted);font-weight:400;"> / </span>'
+                + '<span style="font-weight:700;color:var(--text);">' + total + '</span>'
+                + '<span style="font-size:11px;color:var(--muted);margin-left:4px;">(' + pct + '%)</span>'
+                + '</td>';
+            })()
             + '</tr>';
         }).join('');
 
@@ -2384,7 +2531,7 @@ async function render() {
           + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);border-bottom:2px solid var(--border);">Population</th>'
           + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--run);border-bottom:2px solid var(--border);">🏅 Half Marathon</th>'
           + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--parkrun);border-bottom:2px solid var(--border);">🏃 Parkrun</th>'
-          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--travel);border-bottom:2px solid var(--border);">🧭 Tourism</th>'
+          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--travel);border-bottom:2px solid var(--border);">🧭 Things To Do</th>'
           + '</tr></thead>'
           + '<tbody>' + rows + '</tbody>'
           + (stateCities.length > 1
@@ -2393,7 +2540,12 @@ async function render() {
               + '<td style="padding:10px 14px;background:var(--bg);"></td>'
               + totalCell(stateHMDone, stateHMTotal)
               + totalCell(statePKDone, statePKTotal)
-              + '<td style="text-align:center;padding:10px 14px;background:var(--bg);font-weight:700;color:var(--blue);">' + (stateTourism || '—') + '</td>'
+              + (function() {
+                if (!stateTourism) return '<td style="text-align:center;padding:10px 14px;background:var(--bg);color:var(--muted);">—</td>';
+                return '<td style="text-align:center;padding:10px 14px;background:var(--bg);">'
+                  + '<span style="color:var(--blue);font-weight:700;">' + stateTourism + '</span>'
+                  + '</td>';
+              })()
               + '</tr></tfoot>'
             : '')
           + '</table></div>'
@@ -2492,7 +2644,7 @@ async function render() {
       + '<div class="city-tab active" id="tab-overview" onclick="showCityTab(\'overview\')">🗺️ Overview</div>'
       + '<div class="city-tab" id="tab-halfmarathons" onclick="showCityTab(\'halfmarathons\')">🏅 Half Marathons</div>'
       + '<div class="city-tab" id="tab-parkruns" onclick="showCityTab(\'parkruns\')">🏃 Parkruns</div>'
-      + '<div class="city-tab" id="tab-tourism" onclick="showCityTab(\'tourism\')">🧭 Tourism</div>'
+      + '<div class="city-tab" id="tab-tourism" onclick="showCityTab(\'tourism\')">🧭 Things To Do</div>'
       + '</div>'
       + '<div id="city-tab-content"></div>';
 
