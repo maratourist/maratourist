@@ -2473,10 +2473,11 @@ async function render() {
 
     main.innerHTML = '<div class="back-btn" onclick="go(\'country\',' + state.country + ')">‹ Back to ' + country.name + '</div>'
       + '<div class="city-info-block">'
-      + '<div class="city-info-name">' + country.flag_emoji + ' ' + cityData.name + '</div>'
+      + '<div class="city-info-name">' + cityData.name + '</div>'
       + '<div class="city-info-meta">'
-      + '<span>' + country.name + '</span>'
-      + (cityData.state ? '<span style="color:var(--border);">·</span><span><b>' + cityData.state + '</b></span>' : '')
+      + '<span>' + country.flag_emoji + ' ' + country.name + '</span>'
+      + (cityData.state ? '<span style="color:var(--border);">›</span><span>' + cityData.state + '</span>' : '')
+      + '<span style="color:var(--border);">›</span><span style="color:var(--muted);">' + cityData.name + '</span>'
       + (pop ? '<span style="color:var(--border);">·</span><span>' + pop + '</span>' : '')
       + '</div>'
       + descHTML
