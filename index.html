@@ -924,26 +924,10 @@
   }
 
   /* ── CITY TRAVEL GUIDE ── */
-  .city-hero {
-    position: relative;
-    width: 100%;
-    height: 280px;
-    border-radius: 14px;
-    overflow: hidden;
-    margin-bottom: 24px;
-    background: linear-gradient(135deg, #1162d6, #0d4ba8);
-    box-shadow: var(--shadow-hover);
-  }
-  .city-hero-img {
-    width: 100%; height: 100%;
-    object-fit: contain;
-    display: block;
-    background: #111;
-  }
-  .city-hero-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 100%);
-  }
+  /* hero styles kept minimal — no longer used as full-width */
+  .city-hero { display: none; }
+  .city-hero-img { display: none; }
+  .city-hero-overlay { display: none; }
   .city-info-block {
     margin-bottom: 24px;
   }
@@ -967,15 +951,15 @@
     border: 1.5px solid var(--blue); border-radius: 8px;
     background: var(--card); color: var(--text); resize: vertical;
   }
-  /* Photo gallery — 5 fixed slots */
+  /* Photo gallery — 6 slots (cover + 5) in 3 cols */
   .city-gallery-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
     margin-bottom: 28px;
   }
   .city-photo-slot {
-    aspect-ratio: 4/3;
+    aspect-ratio: 16/10;
     border-radius: 10px;
     overflow: hidden;
     position: relative;
@@ -2463,20 +2447,19 @@ async function render() {
         + '</div></div>';
     }
 
-    const heroImg = cityData.cover_photo
-      ? '<img class="city-hero-img" src="' + cityData.cover_photo + '" alt="' + cityData.name + '">'
-      : '<div style="width:100%;height:100%;background:linear-gradient(135deg,var(--blue),#0d4ba8);display:flex;align-items:center;justify-content:center;"><span style="font-size:60px;">' + country.flag_emoji + '</span></div>';
-
-    const photoFields = ['photo_1','photo_2','photo_3','photo_4','photo_5'];
-    const gallerySlots = photoFields.map((field, i) => {
+    const allPhotoFields = ['cover_photo','photo_1','photo_2','photo_3','photo_4','photo_5'];
+    const allPhotoLabels = ['Cover','Photo 2','Photo 3','Photo 4','Photo 5','Photo 6'];
+    const gallerySlots = allPhotoFields.map((field, i) => {
       const url = cityData[field];
+      const isCover = field === 'cover_photo';
       const inner = url
-        ? '<img src="' + url + '" alt="Photo ' + (i+1) + '">'
+        ? '<img src="' + url + '" alt="' + allPhotoLabels[i] + '">'
           + '<div class="slot-overlay">'
+          + (isCover ? '<span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:white;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;">COVER</span>' : '')
           + '<button class="slot-btn" onclick="event.stopPropagation();uploadCityPhoto(' + cityData.id + ',\'' + field + '\')">Change</button>'
           + '<button class="slot-btn" style="color:#d03030;" onclick="event.stopPropagation();removeCityPhoto(' + cityData.id + ',\'' + field + '\')">Remove</button>'
           + '</div>'
-        : '<div class="slot-empty"><span>📷</span><span>Add Photo</span></div>';
+        : '<div class="slot-empty"><span>📷</span><span>' + allPhotoLabels[i] + '</span></div>';
       return '<div class="city-photo-slot" onclick="uploadCityPhoto(' + cityData.id + ',\'' + field + '\')">'
         + inner + '</div>';
     }).join('');
@@ -2489,11 +2472,6 @@ async function render() {
       : '<button onclick="editCityDescription(' + cityData.id + ')" style="font-size:13px;color:var(--blue);background:var(--bg);border:1.5px dashed var(--blue);border-radius:8px;padding:8px 16px;cursor:pointer;">+ Add description</button>';
 
     main.innerHTML = '<div class="back-btn" onclick="go(\'country\',' + state.country + ')">‹ Back to ' + country.name + '</div>'
-      + '<div class="city-hero" style="position:relative;">'
-      + heroImg
-      + '<div class="city-hero-overlay"></div>'
-      + '<button class="city-hero-upload-btn" onclick="uploadCityPhoto(' + cityData.id + ',\'cover_photo\')">📷 Change Cover</button>'
-      + '</div>'
       + '<div class="city-info-block">'
       + '<div class="city-info-name">' + country.flag_emoji + ' ' + cityData.name + '</div>'
       + '<div class="city-info-meta">'
