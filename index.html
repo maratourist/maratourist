@@ -2939,12 +2939,13 @@ function renderParkrunStatsPanel(rows) {
   });
 
   // ── Time distribution: floor(mins) so 24:09 → 24 ──
-  const timeBuckets = { '≤23': 0, '24': 0, '25': 0, '26': 0, '27': 0, '28': 0, '29': 0, '30+': 0 };
+  const timeBucketKeys = ['23', '24', '25', '26', '27', '28', '29', '30+'];
+  const timeBuckets = { '23': 0, '24': 0, '25': 0, '26': 0, '27': 0, '28': 0, '29': 0, '30+': 0 };
   doneRows.forEach(row => {
     const t = row.result.finish_time; if (!t) return;
     const p = t.split(':').map(Number);
     const floorMins = p[0]; // MM:SS — integer minutes
-    if (floorMins <= 23)     timeBuckets['≤23']++;
+    if (floorMins <= 23)     timeBuckets['23']++;
     else if (floorMins === 24) timeBuckets['24']++;
     else if (floorMins === 25) timeBuckets['25']++;
     else if (floorMins === 26) timeBuckets['26']++;
@@ -3054,8 +3055,8 @@ function renderParkrunStatsPanel(rows) {
       <div class="pk-mini-table-wrap">
         <div class="pk-mini-table-title">Finish Time Distribution (min)</div>
         <table class="pk-mini-table">
-          <thead><tr>${Object.keys(timeBuckets).map(k => `<th>${k}</th>`).join('')}</tr></thead>
-          <tbody><tr>${Object.values(timeBuckets).map(v => `<td>${v}</td>`).join('')}</tr></tbody>
+          <thead><tr>${timeBucketKeys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
+          <tbody><tr>${timeBucketKeys.map(k => `<td>${timeBuckets[k]}</td>`).join('')}</tr></tbody>
         </table>
       </div>
       <div class="pk-mini-table-wrap">
