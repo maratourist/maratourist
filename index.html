@@ -988,7 +988,9 @@
     background: rgba(0,0,0,0.45);
     display: none; align-items: center; justify-content: center; gap: 8px;
   }
-  .city-photo-slot:hover .slot-overlay { display: flex; }
+  body.admin-unlocked .city-photo-slot:hover .slot-overlay { display: flex; }
+  .viewer-photo-slot { cursor: default !important; }
+  .viewer-photo-slot:hover { border-color: var(--border) !important; transform: none !important; }
   .slot-btn {
     background: white; border: none; border-radius: 6px;
     padding: 5px 10px; font-size: 12px; font-weight: 600;
@@ -1103,6 +1105,32 @@
   }
   .city-tab.active { background: var(--blue); color: white; border-color: var(--blue); }
   .city-tab:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
+
+  /* ── ADMIN MODE ── */
+  .admin-only { display: none !important; }
+  body.admin-unlocked .admin-only { display: revert !important; }
+  body.admin-unlocked .admin-only[style*="display:none"],
+  body.admin-unlocked .admin-only[style*="display: none"] { display: revert !important; }
+
+  .admin-lock-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 6px 8px;
+    border-radius: 7px;
+    color: var(--muted);
+    transition: all 0.15s;
+    line-height: 1;
+    opacity: 0.45;
+  }
+  .admin-lock-btn:hover { opacity: 1; background: var(--blue-pale); color: var(--blue); }
+  body.admin-unlocked .admin-lock-btn {
+    opacity: 1;
+    color: var(--green);
+    background: #edfaf3;
+  }
+  body.admin-unlocked .admin-lock-btn:hover { background: #d4f5e4; }
 
   .pk-filters {
     display: flex;
@@ -1231,7 +1259,9 @@
       <div class="hstat-pct" id="stat-pk-pct">–%</div>
     </div>
   </div>
-  <div></div>
+  <div style="display:flex;justify-content:flex-end;align-items:center;">
+    <button class="admin-lock-btn" id="admin-lock-btn" onclick="toggleAdminMode()" title="Admin"></button>
+  </div>
 </header>
 
 <div class="breadcrumb" id="breadcrumb"></div>
@@ -1241,6 +1271,58 @@
 <div id="modal-root"></div>
 
 <script>
+// ════════════════════════════════════════
+// ADMIN AUTH (PIN-based, client-side)
+// ════════════════════════════════════════
+const ADMIN_HASH = 'a0e9c18a756ef5c35ba6c32ea8da5a739140b543f7f57bf35cab8861411bb3e9';
+
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function isAdmin() {
+  return sessionStorage.getItem('adminMode') === '1';
+}
+
+function applyAdminMode() {
+  const unlocked = isAdmin();
+  document.body.classList.toggle('admin-unlocked', unlocked);
+  const btn = document.getElementById('admin-lock-btn');
+  if (btn) btn.textContent = unlocked ? '🔓' : '🔒';
+}
+
+// Patch render() to re-apply admin mode after dynamic content is injected
+const _origRender = window.render;
+function patchedRender(...args) {
+  const result = _origRender ? _origRender(...args) : undefined;
+  if (result && result.then) result.then(() => applyAdminMode());
+  else applyAdminMode();
+  return result;
+}
+
+async function toggleAdminMode() {
+  if (isAdmin()) {
+    // Lock
+    sessionStorage.removeItem('adminMode');
+    applyAdminMode();
+    return;
+  }
+  // Unlock — prompt for password
+  const pin = prompt('🔐 Admin password:');
+  if (pin === null) return; // cancelled
+  const hash = await sha256(pin);
+  if (hash === ADMIN_HASH) {
+    sessionStorage.setItem('adminMode', '1');
+    applyAdminMode();
+  } else {
+    alert('❌ Wrong password.');
+  }
+}
+
+// Apply on load
+document.addEventListener('DOMContentLoaded', applyAdminMode);
+
 // ════════════════════════════════════════
 // CITY PHOTO UPLOAD
 // ════════════════════════════════════════
@@ -1605,7 +1687,7 @@ function showCityTab(tab) {
 
   if (tab === 'halfmarathons') {
     container.innerHTML = `
-      <div class="action-btn-row">
+      <div class="action-btn-row admin-only">
         <button class="action-btn" style="background:var(--run);" onclick="openHalfMarathonRaceForm(${city.id})">+ Add Race</button>
       </div>
       <div id="hm-table-container">Loading...</div>`;
@@ -1615,7 +1697,7 @@ function showCityTab(tab) {
 
   if (tab === 'parkruns') {
     container.innerHTML = `
-      <div class="action-btn-row">
+      <div class="action-btn-row admin-only">
         <button class="action-btn" onclick="openParkrunLocationForm(${city.id})">+ Add Parkrun Location</button>
       </div>
       <div id="pk-table-container">Loading...</div>`;
@@ -1639,7 +1721,7 @@ function renderTourismTab(city, tourism) {
   const container = document.getElementById('city-tab-content');
   if (!container) return;
 
-  let html = `<div class="action-btn-row" style="margin-bottom:20px;">
+  let html = `<div class="action-btn-row admin-only" style="margin-bottom:20px;">
     <button class="action-btn" onclick="openTourismForm(${city.id})">+ Add Place</button>
   </div>`;
 
@@ -1674,7 +1756,7 @@ function renderTourismTab(city, tourism) {
         <td style="width:90px;text-align:center;padding:10px 6px;" class="t-stars">${starsHTML(e.rating)}</td>
         <td style="width:100px;text-align:center;padding:10px 6px;" class="t-date">${e.visit_date ? formatDate(e.visit_date) : '—'}</td>
         <td style="width:36px;text-align:center;padding:10px 6px;">${wikiCell}</td>
-        <td style="width:60px;text-align:center;padding:10px 6px;">
+        <td style="width:60px;text-align:center;padding:10px 6px;" class="admin-only">
           <button onclick="openTourismEditForm(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;">✏️</button>
           <button onclick="deleteTourismEntry(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:#d03030;font-size:14px;">🗑</button>
         </td>
@@ -2610,7 +2692,7 @@ async function render() {
       + '<div class="page-title">' + countryFlagImg(country.flag_emoji, country.name) + ' ' + country.name + '</div>'
       + '<div class="page-subtitle">Capital: ' + (country.capital || '—') + ' · ' + cities.length + ' ' + (cities.length === 1 ? 'city' : 'cities') + ' logged</div>'
       + '</div>'
-      + '<div class="action-btn-row">'
+      + '<div class="action-btn-row admin-only">'
       + '<button class="action-btn" onclick="openCityForm(' + country.id + ')">+ Add City</button>'
       + '</div>'
       + (cities.length === 0
@@ -2658,13 +2740,14 @@ async function render() {
       const isCover = field === 'cover_photo';
       const inner = url
         ? '<img src="' + url + '" alt="' + allPhotoLabels[i] + '">'
-          + '<div class="slot-overlay">'
+          + '<div class="slot-overlay admin-only">'
           + (isCover ? '<span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:white;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;">COVER</span>' : '')
           + '<button class="slot-btn" onclick="event.stopPropagation();uploadCityPhoto(' + cityData.id + ',\'' + field + '\')">Change</button>'
           + '<button class="slot-btn" style="color:#d03030;" onclick="event.stopPropagation();removeCityPhoto(' + cityData.id + ',\'' + field + '\')">Remove</button>'
           + '</div>'
         : '<div class="slot-empty"><span>📷</span><span>' + allPhotoLabels[i] + '</span></div>';
-      return '<div class="city-photo-slot" onclick="uploadCityPhoto(' + cityData.id + ',\'' + field + '\')">'
+      const clickHandler = isAdmin() ? 'onclick="uploadCityPhoto(' + cityData.id + ',\'' + field + '\')"' : '';
+      return '<div class="city-photo-slot' + (isAdmin() ? '' : ' viewer-photo-slot') + '" ' + clickHandler + '>'
         + inner + '</div>';
     }).join('');
 
@@ -2672,8 +2755,8 @@ async function render() {
 
     const descHTML = cityData.description
       ? '<div class="city-description" id="city-desc-text">' + cityData.description + '</div>'
-        + '<button onclick="editCityDescription(' + cityData.id + ')" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;margin-top:4px;">✏️ Edit description</button>'
-      : '<button onclick="editCityDescription(' + cityData.id + ')" style="font-size:13px;color:var(--blue);background:var(--bg);border:1.5px dashed var(--blue);border-radius:8px;padding:8px 16px;cursor:pointer;">+ Add description</button>';
+        + '<button onclick="editCityDescription(' + cityData.id + ')" class="admin-only" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;margin-top:4px;">✏️ Edit description</button>'
+      : '<button onclick="editCityDescription(' + cityData.id + ')" class="admin-only" style="font-size:13px;color:var(--blue);background:var(--bg);border:1.5px dashed var(--blue);border-radius:8px;padding:8px 16px;cursor:pointer;">+ Add description</button>';
 
     main.innerHTML = '<div class="back-btn" onclick="go(\'country\',' + state.country + ')">‹ Back to ' + country.name + '</div>'
       + '<div class="city-info-block">'
@@ -2718,7 +2801,7 @@ async function render() {
       <div class="page-header">
         <div class="page-title">🏅 Half Marathons — ${city.name}</div>
       </div>
-      <div class="action-btn-row">
+      <div class="action-btn-row admin-only">
         <button class="action-btn" style="background:var(--run);" onclick="openHalfMarathonRaceForm(${city.id})">+ Add Race</button>
       </div>
       <div id="hm-table-container">Loading...</div>
@@ -2734,7 +2817,7 @@ async function render() {
       <div class="page-header">
         <div class="page-title">🏃 Parkruns — ${city.name}</div>
       </div>
-      <div class="action-btn-row">
+      <div class="action-btn-row admin-only">
         <button class="action-btn" onclick="openParkrunLocationForm(${city.id})">+ Add Parkrun Location</button>
       </div>
       <div id="pk-table-container">Loading...</div>
@@ -3121,7 +3204,7 @@ function renderParkrunTableHTML(rows, { showLocationCol }) {
               <td >${row.done ? (r.my_position_age_category ?? '–') : '–'}</td>
               <td style="border-right:2px solid var(--border)">${row.done ? (r.my_position_age_category_pct != null ? parseFloat(r.my_position_age_category_pct).toFixed(2) + '%' : '–') : '–'}</td>
               <td >${row.done ? (r.age_grade != null ? parseFloat(r.age_grade).toFixed(2) + '%' : '–') : '–'}</td>
-              <td><button class="pk-add-inline" onclick="openParkrunResultForm(${row.loc.id})">+ Add</button></td>
+              <td><button class="pk-add-inline admin-only" onclick="openParkrunResultForm(${row.loc.id})">+ Add</button></td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -3927,7 +4010,7 @@ function renderHalfMarathonTableHTML(rows, { showLocationCol }) {
       + '<td >' + (d ? (r.my_position_age_category ?? '–') : '–') + '</td>'
       + '<td style="border-right:2px solid var(--border)">' + (d && r.my_position_age_category_pct != null ? parseFloat(r.my_position_age_category_pct).toFixed(2) + '%' : '–') + '</td>'
       + '<td >' + (d && r.age_grade != null ? parseFloat(r.age_grade).toFixed(2) + '%' : '–') + '</td>'
-      + '<td><button class="hm-add-inline" onclick="openHalfMarathonResultForm(' + row.race.id + ')">+ Add</button></td>'
+      + '<td><button class="hm-add-inline admin-only" onclick="openHalfMarathonResultForm(' + row.race.id + ')">+ Add</button></td>'
       + '</tr>';
   }).join('');
 
