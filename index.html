@@ -2700,12 +2700,14 @@ async function render() {
           }
 
           const pop = city.population ? city.population.toLocaleString() : '—';
+          const elev = city.elevation != null ? city.elevation + 'm' : '—';
           return '<tr style="cursor:pointer;transition:background 0.12s;' + rowBg + '" onmouseover="this.style.background=\'#bbf0d4\'" onmouseout="this.style.background=\'' + (isWorkedOn ? '#d4f5e4' : '') + '\'" onclick="go(\'city\',' + city.id + ')">'
             + '<td style="padding:10px 14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px;">'
             + dot + city.name
             + (isWorkedOn ? '<span style="font-size:10px;font-weight:600;color:#16a34a;background:#dcfce7;padding:1px 7px;border-radius:99px;letter-spacing:0.3px;">visited</span>' : '')
             + '</td>'
             + '<td style="text-align:center;padding:10px 14px;color:var(--muted);">' + pop + '</td>'
+            + '<td style="text-align:center;padding:10px 14px;color:var(--muted);">' + elev + '</td>'
             + cell(cs.hm, cs.hmTotal)
             + cell(cs.pk, cs.pkTotal)
             + (function() {
@@ -2747,6 +2749,7 @@ async function render() {
           + '<thead><tr style="background:var(--bg);">'
           + '<th style="text-align:left;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);border-bottom:2px solid var(--border);">City</th>'
           + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);border-bottom:2px solid var(--border);">Population</th>'
+          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);border-bottom:2px solid var(--border);">Elevation</th>'
           + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--run);border-bottom:2px solid var(--border);">🏅 Half Marathon</th>'
           + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--parkrun);border-bottom:2px solid var(--border);">🏃 Parkrun</th>'
           + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--travel);border-bottom:2px solid var(--border);">🧭 Things To Do</th>'
@@ -2755,6 +2758,7 @@ async function render() {
           + (stateCities.length > 1
             ? '<tfoot><tr style="background:var(--bg);border-top:2px solid var(--border);">'
               + '<td style="padding:10px 14px;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);">TOTAL</td>'
+              + '<td style="padding:10px 14px;background:var(--bg);"></td>'
               + '<td style="padding:10px 14px;background:var(--bg);"></td>'
               + totalCell(stateHMDone, stateHMTotal)
               + totalCell(statePKDone, statePKTotal)
@@ -2866,8 +2870,6 @@ async function render() {
       + (cityData.state ? '<span style="color:var(--border);">›</span><span>' + cityData.state + '</span>' : '')
       + '<span style="color:var(--border);">›</span><span style="color:var(--muted);">' + cityData.name + '</span>'
       + (pop ? '<span style="color:var(--border);">·</span><span>' + pop + '</span>' : '')
-      + (elev ? '<span style="color:var(--border);">·</span><span>' + elev + '</span>' : '')
-      + (distStr ? '<span style="color:var(--border);">·</span><span style="color:var(--muted);">' + distStr + '</span>' : '')
       + '</div>'
       + descHTML
       + '</div>'
