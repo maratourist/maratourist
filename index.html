@@ -1539,7 +1539,7 @@ async function loadAllStats() {
       { data: allResults },
       { data: allTourism }
     ] = await Promise.all([
-      sb.from('cities').select('id, country_id'),
+      sb.from('cities').select('id, name, country_id, state, population, elevation'),
       sb.from('half_marathon_races').select('id, city_id'),
       sb.from('parkrun_locations').select('id, city_id'),
       sb.from('parkrun_results').select('location_id'),
@@ -1894,13 +1894,17 @@ async function backfillCityElevation() {
     const { data: countries } = await sb.from('countries').select('id, name');
     const countryMap = Object.fromEntries((countries || []).map(c => [c.id, c.name]));
 
+    // Get full city data including state
+    const { data: fullCities } = await sb.from('cities').select('id, name, country_id, state, elevation').is('elevation', null);
+    const citiesToProcess = fullCities || cities;
+
     // Process in batches of 5
     const BATCH = 5;
-    for (let i = 0; i < cities.length; i += BATCH) {
-      const batch = cities.slice(i, i + BATCH);
+    for (let i = 0; i < citiesToProcess.length; i += BATCH) {
+      const batch = citiesToProcess.slice(i, i + BATCH);
       await Promise.all(batch.map(async city => {
         try {
-          const wikiData = await fetchWikiCityData(city.name, countryMap[city.country_id] || '');
+          const wikiData = await fetchWikiCityData(city.name, countryMap[city.country_id] || '', city.state || '');
           const updates = {};
           if (wikiData.elevation != null) updates.elevation = wikiData.elevation;
           if (wikiData.latitude  != null) { updates.latitude = wikiData.latitude; updates.longitude = wikiData.longitude; }
@@ -1908,23 +1912,44 @@ async function backfillCityElevation() {
         } catch(e) {}
       }));
     }
+
+    // Clear cache so next render picks up fresh data
+    citiesCache = {};
   } catch(e) {}
   _backfillRunning = false;
 }
 
-async function fetchWikiCityData(cityName, countryName) {
+async function fetchWikiCityData(cityName, countryName, stateName) {
   try {
-    const q = encodeURIComponent(cityName + ' ' + countryName);
-    const searchR = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + q + '&srlimit=1&format=json&origin=*');
-    const searchD = await searchR.json();
-    if (!searchD.query.search.length) return {};
-    const title = searchD.query.search[0].title;
+    // Try with state first (more precise for AU/BR), then fallback to country
+    const queries = stateName
+      ? [cityName + ' ' + stateName, cityName + ' ' + countryName]
+      : [cityName + ' ' + countryName];
 
-    const pageR = await fetch('https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvsection=0&titles=' + encodeURIComponent(title) + '&format=json&origin=*');
-    const pageD = await pageR.json();
-    const pages = pageD.query.pages;
-    const page = pages[Object.keys(pages)[0]];
-    const content = page?.revisions?.[0]?.['*'] || '';
+    let content = '';
+    let pageTitle = '';
+    for (const q of queries) {
+      const searchR = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(q) + '&srlimit=1&format=json&origin=*');
+      const searchD = await searchR.json();
+      if (!searchD.query.search.length) continue;
+      pageTitle = searchD.query.search[0].title;
+
+      const pageR = await fetch('https://en.wikipedia.org/w/api.php?action=query&prop=revisions|coordinates&rvprop=content&rvsection=0&titles=' + encodeURIComponent(pageTitle) + '&format=json&origin=*');
+      const pageD = await pageR.json();
+      const pages = pageD.query.pages;
+      const page = pages[Object.keys(pages)[0]];
+      content = page?.revisions?.[0]?.['*'] || '';
+
+      // Use API coordinates if available (more reliable)
+      const coords = page?.coordinates?.[0];
+      if (coords) {
+        _wikiCoords = { latitude: coords.lat, longitude: coords.lon };
+      } else {
+        _wikiCoords = null;
+      }
+      if (content) break;
+    }
+    if (!content) return {};
 
     const result = {};
 
@@ -1952,26 +1977,32 @@ async function fetchWikiCityData(cityName, countryName) {
       if (elevFt) result.elevation = Math.round(parseFloat(elevFt[1]) * 0.3048);
     }
 
-    // Coordinates — try |coordinates={{coord|lat|lng}} and |lat_deg / |lon_deg patterns
-    const coordSimple = content.match(/\|\s*coordinates\s*=\s*{{[Cc]oord\|([-\d\.]+)\|([-\d\.]+)/);
-    if (coordSimple) {
-      result.latitude  = parseFloat(coordSimple[1]);
-      result.longitude = parseFloat(coordSimple[2]);
+    // Coordinates — use API coords first, then parse wikitext
+    if (_wikiCoords) {
+      result.latitude  = _wikiCoords.latitude;
+      result.longitude = _wikiCoords.longitude;
     } else {
-      const latD = content.match(/\|\s*lat_?d(?:eg)?\s*=\s*([\d\.]+)/i);
-      const latH = content.match(/\|\s*lat_?[Nn][Ss]\s*=\s*([NS])/i);
-      const lngD = content.match(/\|\s*lon(?:g)?_?d(?:eg)?\s*=\s*([\d\.]+)/i);
-      const lngH = content.match(/\|\s*lon(?:g)?_?[EW]\s*=\s*([EW])/i);
-      if (latD && lngD) {
-        result.latitude  = parseFloat(latD[1]) * (latH?.[1] === 'S' ? -1 : 1);
-        result.longitude = parseFloat(lngD[1]) * (lngH?.[1] === 'W' ? -1 : 1);
+      const coordSimple = content.match(/\|\s*coordinates\s*=\s*{{[Cc]oord\|([-\d\.]+)\|([-\d\.]+)/);
+      if (coordSimple) {
+        result.latitude  = parseFloat(coordSimple[1]);
+        result.longitude = parseFloat(coordSimple[2]);
+      } else {
+        const latD = content.match(/\|\s*lat_?d(?:eg)?\s*=\s*([\d\.]+)/i);
+        const latH = content.match(/\|\s*lat_?[Nn][Ss]\s*=\s*([NS])/i);
+        const lngD = content.match(/\|\s*lon(?:g)?_?d(?:eg)?\s*=\s*([\d\.]+)/i);
+        const lngH = content.match(/\|\s*lon(?:g)?_?[EW]\s*=\s*([EW])/i);
+        if (latD && lngD) {
+          result.latitude  = parseFloat(latD[1]) * (latH?.[1] === 'S' ? -1 : 1);
+          result.longitude = parseFloat(lngD[1]) * (lngH?.[1] === 'W' ? -1 : 1);
+        }
       }
     }
 
     return result;
-  } catch(e) {}
+  } catch(e) { console.warn('fetchWikiCityData error:', e); }
   return {};
 }
+let _wikiCoords = null;
 
 // Legacy wrapper kept for any stray calls
 async function fetchWikiPopulation(cityName, countryName) {
@@ -2843,7 +2874,7 @@ async function render() {
     // Auto-fetch missing city data from Wikipedia
     const needsWiki = !cityData.population || cityData.elevation == null || cityData.latitude == null;
     if (needsWiki) {
-      const wikiData = await fetchWikiCityData(cityData.name, country.name);
+      const wikiData = await fetchWikiCityData(cityData.name, country.name, cityData.state || '');
       const updates = {};
       if (!cityData.population && wikiData.population) { cityData.population = wikiData.population; updates.population = wikiData.population; }
       if (cityData.elevation == null && wikiData.elevation != null) { cityData.elevation = wikiData.elevation; updates.elevation = wikiData.elevation; }
