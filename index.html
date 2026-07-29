@@ -1881,6 +1881,37 @@ async function fetchWikiLink(name, cityName) {
   return null;
 }
 
+let _backfillRunning = false;
+async function backfillCityElevation() {
+  if (_backfillRunning) return;
+  _backfillRunning = true;
+  try {
+    // Fetch all cities missing elevation
+    const { data: cities } = await sb.from('cities').select('id, name, country_id, elevation').is('elevation', null);
+    if (!cities || cities.length === 0) return;
+
+    // Get country names for search context
+    const { data: countries } = await sb.from('countries').select('id, name');
+    const countryMap = Object.fromEntries((countries || []).map(c => [c.id, c.name]));
+
+    // Process in batches of 5
+    const BATCH = 5;
+    for (let i = 0; i < cities.length; i += BATCH) {
+      const batch = cities.slice(i, i + BATCH);
+      await Promise.all(batch.map(async city => {
+        try {
+          const wikiData = await fetchWikiCityData(city.name, countryMap[city.country_id] || '');
+          const updates = {};
+          if (wikiData.elevation != null) updates.elevation = wikiData.elevation;
+          if (wikiData.latitude  != null) { updates.latitude = wikiData.latitude; updates.longitude = wikiData.longitude; }
+          if (Object.keys(updates).length) await sb.from('cities').update(updates).eq('id', city.id);
+        } catch(e) {}
+      }));
+    }
+  } catch(e) {}
+  _backfillRunning = false;
+}
+
 async function fetchWikiCityData(cityName, countryName) {
   try {
     const q = encodeURIComponent(cityName + ' ' + countryName);
@@ -2786,6 +2817,9 @@ async function render() {
       + (cities.length === 0
         ? '<div class="empty-state"><div class="es-icon">📍</div><div class="es-text">No cities logged yet for ' + country.name + '.</div></div>'
         : buildCityTable());
+
+    // Backfill elevation/coordinates in background for cities missing it
+    backfillCityElevation();
     return;
   }
 
@@ -2807,13 +2841,13 @@ async function render() {
     const cityData = cityFresh || city;
 
     // Auto-fetch missing city data from Wikipedia
-    const needsWiki = !cityData.population || !cityData.elevation || !cityData.latitude;
+    const needsWiki = !cityData.population || cityData.elevation == null || cityData.latitude == null;
     if (needsWiki) {
       const wikiData = await fetchWikiCityData(cityData.name, country.name);
       const updates = {};
       if (!cityData.population && wikiData.population) { cityData.population = wikiData.population; updates.population = wikiData.population; }
-      if (!cityData.elevation && wikiData.elevation != null) { cityData.elevation = wikiData.elevation; updates.elevation = wikiData.elevation; }
-      if (!cityData.latitude && wikiData.latitude != null) { cityData.latitude = wikiData.latitude; cityData.longitude = wikiData.longitude; updates.latitude = wikiData.latitude; updates.longitude = wikiData.longitude; }
+      if (cityData.elevation == null && wikiData.elevation != null) { cityData.elevation = wikiData.elevation; updates.elevation = wikiData.elevation; }
+      if (cityData.latitude == null && wikiData.latitude != null) { cityData.latitude = wikiData.latitude; cityData.longitude = wikiData.longitude; updates.latitude = wikiData.latitude; updates.longitude = wikiData.longitude; }
       if (Object.keys(updates).length) sb.from('cities').update(updates).eq('id', cityData.id);
     }
 
