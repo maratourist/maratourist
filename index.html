@@ -1067,14 +1067,17 @@
     box-shadow: var(--shadow);
     transition: border-color 0.15s;
     position: relative;
+    height: 90px;
+    overflow: hidden;
+    box-sizing: border-box;
   }
   .tourism-card:hover { border-color: var(--blue); }
   .tourism-card.not-visited { opacity: 0.45; }
-  .t-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
-  .t-note { font-size: 11px; color: var(--muted); font-style: italic; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .t-note { font-size: 11px; color: var(--muted); font-style: italic; margin-bottom: 5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .t-stars { color: #f59e0b; font-size: 12px; }
   .t-no-rating { font-size: 11px; color: var(--border); }
-  .t-card-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
+  .t-card-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
   .tourism-card:hover .t-card-actions { opacity: 1; }
   .t-cuisine-tag {
     display: inline-block; font-size: 10px; color: var(--muted);
