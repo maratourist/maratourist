@@ -1040,7 +1040,7 @@
   .tourism-section { margin-bottom: 32px; }
   .tourism-section-header {
     display: flex; align-items: center; gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     padding-bottom: 8px;
     border-bottom: 2px solid var(--border);
   }
@@ -1054,32 +1054,32 @@
     background: var(--bg); padding: 2px 8px;
     border-radius: 99px; border: 1px solid var(--border);
   }
-  .tourism-table {
-    width: 100%; border-collapse: collapse;
-    background: var(--card); border-radius: 10px;
-    overflow: hidden; box-shadow: var(--shadow);
-    font-size: 14px;
+  .tourism-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
   }
-  .tourism-table th {
-    background: var(--bg); color: var(--muted);
-    font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.4px;
-    padding: 10px 14px; text-align: left;
-    border-bottom: 2px solid var(--border);
+  .tourism-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 15px;
+    box-shadow: var(--shadow);
+    transition: border-color 0.15s;
+    position: relative;
   }
-  .tourism-table td {
-    padding: 11px 14px; border-bottom: 1px solid var(--border);
-    vertical-align: middle;
+  .tourism-card:hover { border-color: var(--blue); }
+  .tourism-card.not-visited { opacity: 0.45; }
+  .t-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .t-note { font-size: 11px; color: var(--muted); font-style: italic; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-stars { color: #f59e0b; font-size: 12px; }
+  .t-no-rating { font-size: 11px; color: var(--border); }
+  .t-card-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
+  .tourism-card:hover .t-card-actions { opacity: 1; }
+  .t-cuisine-tag {
+    display: inline-block; font-size: 10px; color: var(--muted);
+    background: var(--bg); padding: 1px 6px; border-radius: 4px; margin-left: 4px;
   }
-  .tourism-table tbody tr:last-child td { border-bottom: none; }
-  .tourism-table tbody tr:hover { background: var(--bg); cursor: pointer; }
-  .t-status-done    { color: var(--green); font-size: 16px; }
-  .t-status-pending { color: #d03030; font-size: 16px; }
-  .t-stars { color: #f59e0b; letter-spacing: 1px; font-size: 13px; }
-  .t-name { font-weight: 600; }
-  .t-date { font-size: 12px; color: var(--muted); }
-  .t-link a { color: var(--blue); font-size: 12px; }
-  .t-note { font-size: 12px; color: var(--muted); font-style: italic; }
   .add-tourism-btn {
     display: flex; align-items: center; gap: 6px;
     padding: 7px 14px; font-size: 13px; font-weight: 600;
@@ -1763,19 +1763,22 @@ function renderTourismTab(city, tourism) {
     const visited = entries.filter(t => t.visit_date).length;
     const isRestaurant = key === 'restaurants';
 
-    const rows = entries.map(e => {
-      const nameCell = e.name + (isRestaurant && e.cuisine ? ` <span style="font-size:11px;color:var(--muted);background:var(--bg);padding:1px 6px;border-radius:4px;margin-left:4px;">${e.cuisine}</span>` : '');
-      return `<tr>
-        <td style="padding:10px 12px;" colspan="2">
-          <div class="t-name">${nameCell}</div>
-          ${e.notes ? `<div class="t-note" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px;">${e.notes}</div>` : ''}
-        </td>
-        <td style="width:90px;text-align:center;padding:10px 6px;" class="t-stars">${starsHTML(e.rating)}</td>
-        <td style="width:60px;text-align:center;padding:10px 6px;" class="admin-only">
-          <button onclick="openTourismEditForm(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;">✏️</button>
-          <button onclick="deleteTourismEntry(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:#d03030;font-size:14px;">🗑</button>
-        </td>
-      </tr>`;
+    const cards = entries.map(e => {
+      const isVisited = !!e.visit_date;
+      const cuisineTag = isRestaurant && e.cuisine ? `<span class="t-cuisine-tag">${e.cuisine}</span>` : '';
+      const ratingHTML = e.rating
+        ? `<div class="t-stars">${'⭐'.repeat(Math.round(e.rating))}${'☆'.repeat(Math.max(0,5-Math.round(e.rating)))}</div>`
+        : `<div class="t-no-rating">no rating</div>`;
+      return `
+        <div class="tourism-card${isVisited ? '' : ' not-visited'}">
+          <div class="t-card-actions admin-only">
+            <button onclick="openTourismEditForm(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px;">✏️</button>
+            <button onclick="deleteTourismEntry(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:#d03030;font-size:13px;padding:2px;">🗑</button>
+          </div>
+          <div class="t-name">${e.name}${cuisineTag}</div>
+          ${e.notes ? `<div class="t-note">${e.notes}</div>` : '<div style="margin-bottom:6px;"></div>'}
+          ${ratingHTML}
+        </div>`;
     }).join('');
 
     html += `<div class="tourism-section">
@@ -1784,15 +1787,7 @@ function renderTourismTab(city, tourism) {
         <span class="tourism-section-title">${meta.name}</span>
         <span class="tourism-section-count">${visited}/${entries.length} visited</span>
       </div>
-      <table class="tourism-table" style="table-layout:fixed;width:100%;">
-        <thead><tr>
-          <th style="width:32px;text-align:center;"></th>
-          <th style="text-align:left;">Name</th>
-          <th style="width:90px;text-align:center;">Rating</th>
-          <th style="width:60px;"></th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="tourism-cards">${cards}</div>
     </div>`;
   });
 
