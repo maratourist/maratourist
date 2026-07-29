@@ -93,52 +93,47 @@
     gap: 28px;
     justify-self: center;
   }
-  .hstat { text-align: center; min-width: 100px; }
-
+  .hstat { text-align: center; padding: 0 28px; }
+  .hstat + .hstat { border-left: 1px solid var(--border); }
+  .hstat-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.1px;
+    margin-bottom: 1px;
+  }
+  .hstat-sublabel {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
   .hstat-row {
     display: flex;
     align-items: baseline;
     justify-content: center;
-    gap: 3px;
-    line-height: 1;
-  }
-  .hstat-val {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
+    gap: 5px;
+    margin-bottom: 7px;
   }
   .hstat-done {
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--green);
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
   }
-  .hstat-pend {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 22px;
-    font-weight: 400;
-    color: #d03030;
+  .hstat-sep { font-size: 14px; color: var(--muted); font-weight: 400; }
+  .hstat-val { font-size: 14px; color: var(--muted); font-weight: 400; }
+  .hstat-bar-wrap {
+    width: 72px; height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    margin: 0 auto 5px;
   }
-  .hstat-sep {
-    font-size: 15px;
-    color: var(--border);
-    font-weight: 400;
-  }
-  .hstat-pct {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--blue);
-    margin-top: 3px;
-  }
-  .hstat-label {
-    font-size: 11px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
-  }
+  .hstat-bar-fill { height: 100%; border-radius: 99px; }
+  .hstat-pct { font-size: 11px; color: var(--muted); }
+  .hstat-pend { font-size: 11px; color: #d03030; margin-top: 3px; }
 
   /* ── BREADCRUMB ── */
   .breadcrumb {
@@ -1240,23 +1235,51 @@
   <div class="header-stats">
     <div class="hstat">
       <div class="hstat-label">Countries</div>
-      <div class="hstat-row"><span class="hstat-val" id="stat-countries-total">–</span><span class="hstat-sep">/</span><span class="hstat-done" id="stat-countries-done">–</span><span class="hstat-sep">/</span><span class="hstat-pend" id="stat-countries-pend">–</span></div>
+      <div class="hstat-sublabel">Visited</div>
+      <div class="hstat-row">
+        <span class="hstat-done" id="stat-countries-done">–</span>
+        <span class="hstat-sep">/</span>
+        <span class="hstat-val" id="stat-countries-total">–</span>
+      </div>
+      <div class="hstat-bar-wrap"><div class="hstat-bar-fill" id="stat-countries-bar" style="width:0%;background:var(--blue);"></div></div>
       <div class="hstat-pct" id="stat-countries-pct">–%</div>
+      <div class="hstat-pend" id="stat-countries-pend">–</div>
     </div>
     <div class="hstat">
       <div class="hstat-label">Cities</div>
-      <div class="hstat-row"><span class="hstat-val" id="stat-cities-total">–</span><span class="hstat-sep">/</span><span class="hstat-done" id="stat-cities-done">–</span><span class="hstat-sep">/</span><span class="hstat-pend" id="stat-cities-pend">–</span></div>
+      <div class="hstat-sublabel">Visited</div>
+      <div class="hstat-row">
+        <span class="hstat-done" id="stat-cities-done">–</span>
+        <span class="hstat-sep">/</span>
+        <span class="hstat-val" id="stat-cities-total">–</span>
+      </div>
+      <div class="hstat-bar-wrap"><div class="hstat-bar-fill" id="stat-cities-bar" style="width:0%;background:var(--blue);"></div></div>
       <div class="hstat-pct" id="stat-cities-pct">–%</div>
+      <div class="hstat-pend" id="stat-cities-pend">–</div>
     </div>
     <div class="hstat">
       <div class="hstat-label">Half Marathons</div>
-      <div class="hstat-row"><span class="hstat-val" id="stat-hm-total">–</span><span class="hstat-sep">/</span><span class="hstat-done" id="stat-hm-done">–</span><span class="hstat-sep">/</span><span class="hstat-pend" id="stat-hm-pend">–</span></div>
+      <div class="hstat-sublabel">Completed</div>
+      <div class="hstat-row">
+        <span class="hstat-done" id="stat-hm-done">–</span>
+        <span class="hstat-sep">/</span>
+        <span class="hstat-val" id="stat-hm-total">–</span>
+      </div>
+      <div class="hstat-bar-wrap"><div class="hstat-bar-fill" id="stat-hm-bar" style="width:0%;background:var(--green);"></div></div>
       <div class="hstat-pct" id="stat-hm-pct">–%</div>
+      <div class="hstat-pend" id="stat-hm-pend">–</div>
     </div>
     <div class="hstat">
       <div class="hstat-label">Parkruns</div>
-      <div class="hstat-row"><span class="hstat-val" id="stat-pk-total">–</span><span class="hstat-sep">/</span><span class="hstat-done" id="stat-pk-done">–</span><span class="hstat-sep">/</span><span class="hstat-pend" id="stat-pk-pend">–</span></div>
+      <div class="hstat-sublabel">Completed</div>
+      <div class="hstat-row">
+        <span class="hstat-done" id="stat-pk-done">–</span>
+        <span class="hstat-sep">/</span>
+        <span class="hstat-val" id="stat-pk-total">–</span>
+      </div>
+      <div class="hstat-bar-wrap"><div class="hstat-bar-fill" id="stat-pk-bar" style="width:0%;background:var(--green);"></div></div>
       <div class="hstat-pct" id="stat-pk-pct">–%</div>
+      <div class="hstat-pend" id="stat-pk-pend">–</div>
     </div>
   </div>
   <div style="display:flex;justify-content:flex-end;align-items:center;">
@@ -1613,6 +1636,7 @@ const tourismMeta = {
   hotels:         { icon: "🏨", name: "Hotels" },
   beaches:        { icon: "🏖️", name: "Beaches" },
   parks:          { icon: "🌳", name: "Parks" },
+  aquatic_centers:{ icon: "🏊", name: "Aquatic Centers" },
   libraries:      { icon: "📚", name: "Libraries" },
   restaurants:    { icon: "🍽️", name: "Restaurants" },
   museums:        { icon: "🏛️", name: "Museums" },
@@ -1740,21 +1764,13 @@ function renderTourismTab(city, tourism) {
     const isRestaurant = key === 'restaurants';
 
     const rows = entries.map(e => {
-      const isVisited = !!e.visit_date;
       const nameCell = e.name + (isRestaurant && e.cuisine ? ` <span style="font-size:11px;color:var(--muted);background:var(--bg);padding:1px 6px;border-radius:4px;margin-left:4px;">${e.cuisine}</span>` : '');
-      const wikiCell = e.link
-        ? `<a href="${e.link}" target="_blank" style="font-size:18px;" title="Wikipedia">📖</a>`
-        : '<span style="color:var(--muted);">—</span>';
       return `<tr>
-        <td style="width:32px;text-align:center;padding:10px 6px;">
-          <span class="${isVisited ? 't-status-done' : 't-status-pending'}">${isVisited ? '✓' : '○'}</span>
-        </td>
-        <td style="padding:10px 12px;">
+        <td style="padding:10px 12px;" colspan="2">
           <div class="t-name">${nameCell}</div>
           ${e.notes ? `<div class="t-note" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px;">${e.notes}</div>` : ''}
         </td>
         <td style="width:90px;text-align:center;padding:10px 6px;" class="t-stars">${starsHTML(e.rating)}</td>
-        <td style="width:100px;text-align:center;padding:10px 6px;" class="t-date">${e.visit_date ? formatDate(e.visit_date) : '—'}</td>
         <td style="width:60px;text-align:center;padding:10px 6px;" class="admin-only">
           <button onclick="openTourismEditForm(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;">✏️</button>
           <button onclick="deleteTourismEntry(${e.id}, ${city.id})" style="background:none;border:none;cursor:pointer;color:#d03030;font-size:14px;">🗑</button>
@@ -1773,7 +1789,6 @@ function renderTourismTab(city, tourism) {
           <th style="width:32px;text-align:center;"></th>
           <th style="text-align:left;">Name</th>
           <th style="width:90px;text-align:center;">Rating</th>
-          <th style="width:100px;text-align:center;">Visited</th>
           <th style="width:60px;"></th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -1824,22 +1839,16 @@ function openTourismForm(cityId, prefillCat) {
           ${cuisineOptions}
         </select>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Date Visited <span class="optional">(optional)</span></label>
-          <input class="form-input" id="t-date" type="date">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Rating <span class="optional">(1–5 ⭐)</span></label>
-          <select class="form-input" id="t-rating">
-            <option value="">—</option>
-            <option value="1">⭐</option>
-            <option value="2">⭐⭐</option>
-            <option value="3">⭐⭐⭐</option>
-            <option value="4">⭐⭐⭐⭐</option>
-            <option value="5">⭐⭐⭐⭐⭐</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Rating <span class="optional">(1–5 ⭐)</span></label>
+        <select class="form-input" id="t-rating">
+          <option value="">—</option>
+          <option value="1">⭐</option>
+          <option value="2">⭐⭐</option>
+          <option value="3">⭐⭐⭐</option>
+          <option value="4">⭐⭐⭐⭐</option>
+          <option value="5">⭐⭐⭐⭐⭐</option>
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Notes <span class="optional">(optional)</span></label>
@@ -1852,11 +1861,6 @@ function openTourismForm(cityId, prefillCat) {
     </div>
   `);
 
-  document.getElementById('t-status').addEventListener('change', function() {
-    if (this.value === 'visited' && !document.getElementById('t-date').value) {
-      document.getElementById('t-date').value = new Date().toISOString().split('T')[0];
-    }
-  });
   toggleCuisineField();
 }
 
@@ -1916,7 +1920,6 @@ async function submitTourismForm(cityId) {
   const name = document.getElementById('t-name').value.trim();
   const category = document.getElementById('t-category').value;
   const status = document.getElementById('t-status').value;
-  const date = document.getElementById('t-date').value || null;
   const rating = document.getElementById('t-rating').value || null;
   const notes = document.getElementById('t-notes').value.trim() || null;
   const cuisine = category === 'restaurants' ? (document.getElementById('t-cuisine')?.value || null) : null;
@@ -1933,7 +1936,7 @@ async function submitTourismForm(cityId) {
 
   const { error } = await sb.from('tourism_entries').insert({
     city_id: cityId, name, category,
-    visit_date: status === 'visited' ? (date || new Date().toISOString().split('T')[0]) : date,
+    visit_date: status === 'visited' ? new Date().toISOString().split('T')[0] : null,
     rating, notes, link, cuisine
   });
 
@@ -1977,18 +1980,12 @@ async function openTourismEditForm(entryId, cityId) {
         <label class="form-label">Name</label>
         <input class="form-input" id="te-name" value="${e.name}">
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Date Visited</label>
-          <input class="form-input" id="te-date" type="date" value="${e.visit_date || ''}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Rating</label>
-          <select class="form-input" id="te-rating">
-            <option value="">—</option>
-            ${[1,2,3,4,5].map(n => `<option value="${n}" ${e.rating==n?'selected':''}>${'⭐'.repeat(n)}</option>`).join('')}
-          </select>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Rating</label>
+        <select class="form-input" id="te-rating">
+          <option value="">—</option>
+          ${[1,2,3,4,5].map(n => `<option value="${n}" ${e.rating==n?'selected':''}>${'⭐'.repeat(n)}</option>`).join('')}
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Notes</label>
@@ -2012,10 +2009,8 @@ async function submitTourismEditForm(entryId, cityId) {
   const { error } = await sb.from('tourism_entries').update({
     name,
     category: document.getElementById('te-category').value,
-    visit_date: document.getElementById('te-date').value || null,
     rating: document.getElementById('te-rating').value || null,
     notes: document.getElementById('te-notes').value.trim() || null,
-    link: document.getElementById('te-link').value.trim() || null,
   }).eq('id', entryId);
 
   if (error) {
@@ -2267,11 +2262,14 @@ async function loadHeaderStats() {
   function setStatBox(prefix, total, done) {
     const t = total ?? 0;
     const d = Math.min(done ?? 0, t);
+    const remaining = t - d;
     const pct = t > 0 ? ((d / t) * 100).toFixed(2) : '0.00';
     document.getElementById('stat-' + prefix + '-total').textContent = t;
     document.getElementById('stat-' + prefix + '-done').textContent  = d;
-    document.getElementById('stat-' + prefix + '-pend').textContent  = t - d;
     document.getElementById('stat-' + prefix + '-pct').textContent   = pct + '%';
+    document.getElementById('stat-' + prefix + '-pend').textContent  = remaining + ' remaining';
+    const bar = document.getElementById('stat-' + prefix + '-bar');
+    if (bar) bar.style.width = (t > 0 ? Math.max((d/t)*100, d>0?1:0) : 0) + '%';
   }
 
   const pkDoneLocIds = new Set((pkResults||[]).map(r => r.location_id));
