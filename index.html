@@ -2250,7 +2250,7 @@ async function loadHeaderStats() {
     { data: tourismEntries }
   ] = await Promise.all([
     sb.from('countries').select('id, visited'),
-    sb.from('cities').select('id, country_id'),
+    sb.from('cities').select('id, country_id, cover_photo, description'),
     sb.from('parkrun_locations').select('id, city_id'),
     sb.from('parkrun_results').select('location_id'),
     sb.from('half_marathon_races').select('id, city_id'),
@@ -2277,18 +2277,12 @@ async function loadHeaderStats() {
   const hmDoneRaceIds = new Set((hmResults||[]).map(r => r.race_id));
   setStatBox('hm', (hmRaces||[]).length, hmDoneRaceIds.size);
 
-  const pkCityIds      = new Set((pkLocations||[]).map(r => r.city_id));
-  const hmCityIds      = new Set((hmRaces||[]).map(r => r.city_id));
-  const tourismCityIds = new Set((tourismEntries||[]).map(r => r.city_id));
-  const visitedCityIds = new Set([
-    ...[...(pkLocations||[])].filter(l => pkDoneLocIds.has(l.id)).map(l => l.city_id),
-    ...[...(hmRaces||[])].filter(r => hmDoneRaceIds.has(r.id)).map(r => r.city_id),
-    ...(tourismEntries||[]).map(r => r.city_id)
-  ]);
-  setStatBox('cities', (allCities||[]).length, visitedCityIds.size);
+  // Cities visited = cities with cover_photo AND description (worked on)
+  const workedOnCityIds = new Set((allCities||[]).filter(c => c.cover_photo && c.description).map(c => c.id));
+  setStatBox('cities', (allCities||[]).length, workedOnCityIds.size);
 
   const visitedCountryIds = new Set(
-    (allCities||[]).filter(c => visitedCityIds.has(c.id)).map(c => c.country_id)
+    (allCities||[]).filter(c => workedOnCityIds.has(c.id)).map(c => c.country_id)
   );
   (allCountries||[]).filter(c => c.visited).forEach(c => visitedCountryIds.add(c.id));
   setStatBox('countries', (allCountries||[]).length, visitedCountryIds.size);
@@ -2612,23 +2606,19 @@ async function render() {
         });
 
         const sortedCities = stateCities.slice().sort(function(a, b) {
-          const ca = cityStats[a.id] || {}, cb = cityStats[b.id] || {};
-          const doneA = (ca.hm||0) + (ca.pk||0) + (ca.tourism||0);
-          const doneB = (cb.hm||0) + (cb.pk||0) + (cb.tourism||0);
-          if (doneB !== doneA) return doneB - doneA;
-          const totalA = (ca.hmTotal||0) + (ca.pkTotal||0);
-          const totalB = (cb.hmTotal||0) + (cb.pkTotal||0);
-          if (totalB !== totalA) return totalB - totalA;
-          return a.name.localeCompare(b.name);
+          const popA = a.population || 0;
+          const popB = b.population || 0;
+          return popB - popA;
         });
 
         const rows = sortedCities.map(function(city) {
           const cs = cityStats[city.id] || { hm: 0, hmTotal: 0, pk: 0, pkTotal: 0, tourism: 0 };
           const totalDone = (cs.hm||0) + (cs.pk||0) + (cs.tourism||0);
           const allDone = (cs.hmTotal||0)+(cs.pkTotal||0) > 0 && cs.hm === cs.hmTotal && cs.pk === cs.pkTotal;
-          const rowBg = allDone ? 'background:#edfaf3;' : '';
-          const dot = totalDone > 0
-            ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;flex-shrink:0;"></span>'
+          const isWorkedOn = !!(city.cover_photo && city.description);
+          const rowBg = isWorkedOn ? 'background:#d4f5e4;' : '';
+          const dot = isWorkedOn
+            ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;margin-right:6px;flex-shrink:0;"></span>'
             : '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d03030;margin-right:6px;flex-shrink:0;"></span>';
 
           function cell(done, total) {
@@ -2644,7 +2634,7 @@ async function render() {
           }
 
           const pop = city.population ? city.population.toLocaleString() : '—';
-          return '<tr style="cursor:pointer;transition:background 0.12s;' + rowBg + '" onmouseover="this.style.background=\'#e6f7ef\'" onmouseout="this.style.background=\'' + (allDone ? '#edfaf3' : '') + '\'" onclick="go(\'city\',' + city.id + ')">'
+          return '<tr style="cursor:pointer;transition:background 0.12s;' + rowBg + '" onmouseover="this.style.background=\'#bbf0d4\'" onmouseout="this.style.background=\'' + (isWorkedOn ? '#d4f5e4' : '') + '\'" onclick="go(\'city\',' + city.id + ')">'
             + '<td style="padding:10px 14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;">' + dot + city.name + '</td>'
             + '<td style="text-align:center;padding:10px 14px;color:var(--muted);">' + pop + '</td>'
             + cell(cs.hm, cs.hmTotal)
