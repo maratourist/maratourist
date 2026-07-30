@@ -1539,7 +1539,7 @@ async function loadAllStats() {
       { data: allResults },
       { data: allTourism }
     ] = await Promise.all([
-      sb.from('cities').select('id, name, country_id, state, population, elevation'),
+      sb.from('cities').select('id, name, country_id, state, population, cover_photo, description'),
       sb.from('half_marathon_races').select('id, city_id'),
       sb.from('parkrun_locations').select('id, city_id'),
       sb.from('parkrun_results').select('location_id'),
@@ -1883,40 +1883,8 @@ async function fetchWikiLink(name, cityName) {
 
 let _backfillRunning = false;
 async function backfillCityElevation() {
-  if (_backfillRunning) return;
-  _backfillRunning = true;
-  try {
-    // Fetch all cities missing elevation
-    const { data: cities } = await sb.from('cities').select('id, name, country_id, elevation').is('elevation', null);
-    if (!cities || cities.length === 0) return;
-
-    // Get country names for search context
-    const { data: countries } = await sb.from('countries').select('id, name');
-    const countryMap = Object.fromEntries((countries || []).map(c => [c.id, c.name]));
-
-    // Get full city data including state
-    const { data: fullCities } = await sb.from('cities').select('id, name, country_id, state, elevation').is('elevation', null);
-    const citiesToProcess = fullCities || cities;
-
-    // Process in batches of 5
-    const BATCH = 5;
-    for (let i = 0; i < citiesToProcess.length; i += BATCH) {
-      const batch = citiesToProcess.slice(i, i + BATCH);
-      await Promise.all(batch.map(async city => {
-        try {
-          const wikiData = await fetchWikiCityData(city.name, countryMap[city.country_id] || '', city.state || '');
-          const updates = {};
-          if (wikiData.elevation != null) updates.elevation = wikiData.elevation;
-          if (wikiData.latitude  != null) { updates.latitude = wikiData.latitude; updates.longitude = wikiData.longitude; }
-          if (Object.keys(updates).length) await sb.from('cities').update(updates).eq('id', city.id);
-        } catch(e) {}
-      }));
-    }
-
-    // Clear cache so next render picks up fresh data
-    citiesCache = {};
-  } catch(e) {}
-  _backfillRunning = false;
+  // Column dropped — backfill disabled
+  return;
 }
 
 async function fetchWikiCityData(cityName, countryName, stateName) {
