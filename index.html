@@ -2076,6 +2076,13 @@ async function openTourismEditForm(entryId, cityId) {
         <input class="form-input" id="te-name" value="${e.name}">
       </div>
       <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-input" id="te-status">
+          <option value="pending" ${!e.visit_date ? 'selected' : ''}>○ Not visited yet</option>
+          <option value="visited" ${e.visit_date ? 'selected' : ''}>✓ Already visited</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label class="form-label">Rating</label>
         <select class="form-input" id="te-rating">
           <option value="">—</option>
@@ -2106,6 +2113,9 @@ async function submitTourismEditForm(entryId, cityId) {
     category: document.getElementById('te-category').value,
     rating: document.getElementById('te-rating').value || null,
     notes: document.getElementById('te-notes').value.trim() || null,
+    visit_date: document.getElementById('te-status').value === 'visited'
+      ? (new Date().toISOString().split('T')[0])
+      : null,
   }).eq('id', entryId);
 
   if (error) {
