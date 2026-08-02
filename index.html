@@ -2069,12 +2069,19 @@ async function openTourismEditForm(entryId, cityId) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Category</label>
-          <select class="form-input" id="te-category">${catOptions}</select>
+          <select class="form-input" id="te-category" onchange="document.getElementById('te-cuisine-field').style.display=this.value==='restaurants'?'block':'none'">${catOptions}</select>
         </div>
       </div>
       <div class="form-group">
         <label class="form-label">Name</label>
         <input class="form-input" id="te-name" value="${e.name}">
+      </div>
+      <div class="form-group" id="te-cuisine-field" style="display:${e.category==='restaurants'?'block':'none'};">
+        <label class="form-label">Cuisine Type</label>
+        <select class="form-input" id="te-cuisine">
+          <option value="">— Select cuisine —</option>
+          ${cuisineTypes.map(c => `<option value="${c}" ${e.cuisine===c?'selected':''}>${c}</option>`).join('')}
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Status</label>
@@ -2109,9 +2116,11 @@ async function submitTourismEditForm(entryId, cityId) {
   if (!name) { errorEl.innerHTML = '<div class="form-error">Name is required.</div>'; return; }
   btn.disabled = true; btn.textContent = 'Saving...';
 
+  const category = document.getElementById('te-category').value;
   const { error } = await sb.from('tourism_entries').update({
     name,
-    category: document.getElementById('te-category').value,
+    category,
+    cuisine: category === 'restaurants' ? (document.getElementById('te-cuisine').value || null) : null,
     rating: document.getElementById('te-rating').value || null,
     notes: document.getElementById('te-notes').value.trim() || null,
     visit_date: document.getElementById('te-status').value === 'visited'
