@@ -1286,7 +1286,27 @@
     </div>
   </div>
   <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;">
-    <button onclick="openPRModal()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--run)';this.style.color='var(--run)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⚡ PRs</button>
+    <div onclick="openPRModal()" style="cursor:pointer;text-align:center;padding:0 16px;border-right:1px solid var(--border);" title="Click to see PR progression">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:6px;">Personal Records</div>
+      <div style="display:flex;gap:14px;align-items:flex-end;">
+        <div style="text-align:center;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;color:var(--run);line-height:1;">4:36</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px;">1km</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;color:var(--run);line-height:1;">23:53</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px;">5km</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;color:var(--run);line-height:1;">49:57</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px;">10km</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;color:var(--run);line-height:1;">2:01:54</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px;">HM</div>
+        </div>
+      </div>
+    </div>
     <button onclick="openProjetoModal()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🌍 50+</button>
     <button class="admin-lock-btn" id="admin-lock-btn" onclick="toggleAdminMode()" title="Admin"></button>
   </div>
@@ -2375,7 +2395,7 @@ const PR_DATA = {
 
 function openPRModal() {
   const rows = PR_DATA.records.map(r => `
-    <tr>
+    <tr style="border-bottom:1px solid var(--border);">
       <td style="padding:12px 16px;font-weight:700;color:var(--text);">${r.dist}</td>
       <td style="padding:12px 16px;text-align:center;">
         <span style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:600;color:var(--run);">${r.time}</span>
@@ -2384,12 +2404,15 @@ function openPRModal() {
     </tr>
   `).join('');
 
-  openModal(`
-    <div class="modal-title">⚡ Personal Records</div>
-    <div style="padding:0 24px 8px;">
-      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">⚡ Personal Records</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;">
         <thead>
-          <tr style="border-bottom:2px solid var(--border);">
+          <tr style="border-bottom:2px solid var(--border);background:var(--bg);">
             <th style="padding:8px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">Distance</th>
             <th style="padding:8px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">PB</th>
             <th style="padding:8px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">Pace</th>
@@ -2397,12 +2420,9 @@ function openPRModal() {
         </thead>
         <tbody>${rows}</tbody>
       </table>
-
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="padding-top:16px;border-top:1px solid var(--border);">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:12px;">Season Bests & PB Progression</div>
-        <div style="color:var(--muted);font-size:13px;font-style:italic;text-align:center;padding:16px 0;">
-          Coming soon — data to be filled in 🏃
-        </div>
+        <div style="color:var(--muted);font-size:13px;font-style:italic;text-align:center;padding:16px 0;">Coming soon — data to be filled in 🏃</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -2411,25 +2431,23 @@ function openPRModal() {
   `);
 }
 
-// ════════════════════════════════════════
-// PROJETO 50+
-// ════════════════════════════════════════
 function openProjetoModal() {
-  openModal(`
-    <div class="modal-title">🌍 Projeto 50+</div>
-    <div style="padding:0 24px 16px;">
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🌍 Projeto 50+</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
       <div style="background:linear-gradient(135deg,#eff6ff,#f0fdf4);border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">
         <div style="font-size:36px;margin-bottom:8px;">🏃🌍✈️</div>
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:var(--text);letter-spacing:0.5px;">The Big Vision</div>
         <div style="font-size:13px;color:var(--muted);margin-top:4px;">Retired. Free. Running everywhere.</div>
       </div>
-
       <div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:20px;">
-        The plan is simple. Retire, pack light, and spend the next chapter of life travelling the world the Maratourist way — 
-        <strong>1 to 2 weeks per place</strong>, long enough to actually feel a city, run its streets, find the local parkrun, 
+        The plan is simple. Retire, pack light, and spend the next chapter of life travelling the world the Maratourist way —
+        <strong>1 to 2 weeks per place</strong>, long enough to actually feel a city, run its streets, find the local parkrun,
         race a half marathon, eat the food, talk to the locals, and move on to the next one.
       </div>
-
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;">
         <div style="background:var(--bg);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border);">
           <div style="font-size:24px;margin-bottom:4px;">🗺️</div>
@@ -2447,9 +2465,8 @@ function openProjetoModal() {
           <div style="font-size:11px;color:var(--muted);margin-top:2px;">Not just visit — actually live it</div>
         </div>
       </div>
-
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;font-size:13px;color:#92400e;text-align:center;">
-        ⏳ <strong>This is the future.</strong> Right now it's about doing what's possible — 
+        ⏳ <strong>This is the future.</strong> Right now it's about doing what's possible —
         specific trips, parkruns, races, moments. Building the foundation for what comes next.
       </div>
     </div>
@@ -2864,19 +2881,6 @@ async function render() {
             + '<td style="text-align:center;padding:10px 14px;color:var(--muted);">' + pop + '</td>'
             + cell(cs.hm, cs.hmTotal)
             + cell(cs.pk, cs.pkTotal)
-            + (function() {
-              const done = cs.tourism || 0;
-              const total = cs.tourismTotal || 0;
-              if (total === 0) return '<td style="text-align:center;padding:10px 14px;color:var(--muted);">—</td>';
-              const pct = ((done/total)*100).toFixed(0);
-              const doneColor = done === 0 ? '#d03030' : 'var(--blue)';
-              return '<td style="text-align:center;padding:10px 14px;">'
-                + '<span style="color:' + doneColor + ';font-weight:700;">' + done + '</span>'
-                + '<span style="color:var(--muted);font-weight:400;"> / </span>'
-                + '<span style="font-weight:700;color:var(--text);">' + total + '</span>'
-                + '<span style="font-size:11px;color:var(--muted);margin-left:4px;">(' + pct + '%)</span>'
-                + '</td>';
-            })()
             + '</tr>';
         }).join('');
 
@@ -2904,8 +2908,7 @@ async function render() {
           + '<th style="text-align:left;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);border-bottom:2px solid var(--border);width:30%;">City</th>'
           + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);border-bottom:2px solid var(--border);width:15%;">Population</th>'
           + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--run);border-bottom:2px solid var(--border);width:18.33%;">🏅 Half Marathon</th>'
-          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--parkrun);border-bottom:2px solid var(--border);width:18.33%;">🏃 Parkrun</th>'
-          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--travel);border-bottom:2px solid var(--border);width:18.33%;">🧭 Things To Do</th>'
+          + '<th style="text-align:center;padding:10px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--parkrun);border-bottom:2px solid var(--border);width:25%;">🏃 Parkrun</th>'
           + '</tr></thead>'
           + '<tbody>' + rows + '</tbody>'
           + (stateCities.length > 1
@@ -2914,12 +2917,6 @@ async function render() {
               + '<td style="padding:10px 14px;background:var(--bg);"></td>'
               + totalCell(stateHMDone, stateHMTotal)
               + totalCell(statePKDone, statePKTotal)
-              + (function() {
-                if (!stateTourism) return '<td style="text-align:center;padding:10px 14px;background:var(--bg);color:var(--muted);">—</td>';
-                return '<td style="text-align:center;padding:10px 14px;background:var(--bg);">'
-                  + '<span style="color:var(--blue);font-weight:700;">' + stateTourism + '</span>'
-                  + '</td>';
-              })()
               + '</tr></tfoot>'
             : '')
           + '</table></div>'
@@ -3035,14 +3032,13 @@ async function render() {
       + qsBox('🧭', totalVisited, Math.max(totalTourism, 1), 'Places Visited', 'var(--green)')
       + '</div>'
       + '<div class="city-section-tabs">'
-      + '<div class="city-tab active" id="tab-overview" onclick="showCityTab(\'overview\')">🗺️ Overview</div>'
-      + '<div class="city-tab" id="tab-halfmarathons" onclick="showCityTab(\'halfmarathons\')">🏅 Half Marathons</div>'
+      + '<div class="city-tab active" id="tab-halfmarathons" onclick="showCityTab(\'halfmarathons\')">🏅 Half Marathons</div>'
       + '<div class="city-tab" id="tab-parkruns" onclick="showCityTab(\'parkruns\')">🏃 Parkruns</div>'
       + '</div>'
       + '<div id="city-tab-content"></div>';
 
     window._cityTabData = { city: cityData, country, tourism, cs, activities };
-    showCityTab('overview');
+    showCityTab('halfmarathons');
     return;
   }
 
