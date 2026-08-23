@@ -35,8 +35,9 @@
   /* ── HEADER ── */
   header {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: auto 1fr auto auto;
     align-items: center;
+    gap: 24px;
     padding: 16px 40px;
     background: var(--card);
     border-bottom: 1px solid var(--border);
@@ -1285,31 +1286,37 @@
       <div class="hstat-pend" id="stat-pk-pend">–</div>
     </div>
   </div>
-  <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;">
-    <div onclick="openPRModal()" style="cursor:pointer;text-align:center;padding:0 16px;border-right:1px solid var(--border);" title="Click to see PR progression">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:6px;">Personal Records</div>
-      <div style="display:flex;gap:14px;align-items:flex-end;">
-        <div style="text-align:center;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;color:var(--run);line-height:1;">4:36</div>
-          <div style="font-size:9px;color:var(--muted);margin-top:1px;">1km</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;color:var(--run);line-height:1;">23:53</div>
-          <div style="font-size:9px;color:var(--muted);margin-top:1px;">5km</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;color:var(--run);line-height:1;">49:57</div>
-          <div style="font-size:9px;color:var(--muted);margin-top:1px;">10km</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;color:var(--run);line-height:1;">2:01:54</div>
-          <div style="font-size:9px;color:var(--muted);margin-top:1px;">HM</div>
-        </div>
+  <div onclick="openPRModal()" style="cursor:pointer;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:0 24px;" title="Click to see full PR details">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px;text-align:center;">⚡ Personal Records</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
+      <div style="text-align:center;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">4:36</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">1 km</div>
+        <div style="font-size:9px;color:var(--muted);opacity:0.7;">4:36/km · 2025</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">7:30</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">1 Mile</div>
+        <div style="font-size:9px;color:var(--muted);opacity:0.7;">4:40/km · 2026</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">23:53</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">5 km</div>
+        <div style="font-size:9px;color:var(--muted);opacity:0.7;">4:46/km · 2026</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">49:57</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">10 km</div>
+        <div style="font-size:9px;color:var(--muted);opacity:0.7;">4:59/km · 2026</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">2:01:54</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">Half</div>
+        <div style="font-size:9px;color:var(--muted);opacity:0.7;">5:47/km · 2025</div>
       </div>
     </div>
-    <button onclick="openProjetoModal()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🌍 50+</button>
-    <button class="admin-lock-btn" id="admin-lock-btn" onclick="toggleAdminMode()" title="Admin"></button>
   </div>
+  <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;">
 </header>
 
 <div class="breadcrumb" id="breadcrumb"></div>
@@ -2382,27 +2389,64 @@ let pkCurrentFilters = { country: '', city: '', state: '', status: '' };
 // ════════════════════════════════════════
 const PR_DATA = {
   records: [
-    { dist: '1 km',       time: '4:36',    pace: '4:36/km' },
-    { dist: '1 Mile',     time: '7:41',    pace: '4:46/km' },
-    { dist: '5 km',       time: '23:53',   pace: '4:46/km' },
-    { dist: '10 km',      time: '49:57',   pace: '4:59/km' },
-    { dist: 'Half Marathon', time: '2:01:54', pace: '5:47/km' },
+    { dist: '1 km',          time: '4:36',    pace: '4:36/km', year: 2025, location: 'Harris Farm Parkrun' },
+    { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', year: 2026, location: 'Harris Farm Parkrun' },
+    { dist: '5 km',          time: '23:53',   pace: '4:46/km', year: 2026, location: null },
+    { dist: '10 km',         time: '49:57',   pace: '4:59/km', year: 2026, location: 'Jetty to Jetty Race' },
+    { dist: 'Half Marathon', time: '2:01:54', pace: '5:47/km', year: 2025, location: null },
   ],
-  // Season bests and PB progression to be filled in later
-  seasonBests: [],
-  pbProgression: []
+  seasonBests: {
+    2025: [
+      { dist: '1 Mile',        time: '7:41',    pace: '4:46/km', location: 'New Farm Park TT' },
+      { dist: 'Half Marathon', time: '2:01:54', pace: '5:47/km', location: null },
+    ],
+    2026: [
+      { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', location: 'Harris Farm Parkrun' },
+      { dist: '5 km',          time: '23:53',   pace: '4:46/km', location: null },
+      { dist: '10 km',         time: '49:57',   pace: '4:59/km', location: 'Jetty to Jetty Race' },
+      { dist: 'Half Marathon', time: '2:02:17', pace: '5:48/km', location: null },
+    ],
+  }
 };
 
 function openPRModal() {
-  const rows = PR_DATA.records.map(r => `
+  const prRows = PR_DATA.records.map(r => `
     <tr style="border-bottom:1px solid var(--border);">
-      <td style="padding:12px 16px;font-weight:700;color:var(--text);">${r.dist}</td>
-      <td style="padding:12px 16px;text-align:center;">
-        <span style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:600;color:var(--run);">${r.time}</span>
+      <td style="padding:10px 14px;font-weight:700;color:var(--text);font-size:13px;">${r.dist}</td>
+      <td style="padding:10px 14px;text-align:center;">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--run);">${r.time}</span>
       </td>
-      <td style="padding:12px 16px;text-align:center;color:var(--muted);font-size:13px;">${r.pace}</td>
+      <td style="padding:10px 14px;text-align:center;color:var(--muted);font-size:12px;">${r.pace}</td>
+      <td style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);">${r.year}</td>
+      <td style="padding:10px 14px;font-size:11px;color:var(--muted);">${r.location || '—'}</td>
     </tr>
   `).join('');
+
+  const years = Object.keys(PR_DATA.seasonBests).sort((a,b) => b-a);
+  const seasonHTML = years.map(yr => {
+    const bests = PR_DATA.seasonBests[yr];
+    const rows = bests.map(r => `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px 12px;font-weight:600;color:var(--text);font-size:12px;">${r.dist}</td>
+        <td style="padding:8px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--blue);">${r.time}</td>
+        <td style="padding:8px 12px;text-align:center;font-size:11px;color:var(--muted);">${r.pace}</td>
+        <td style="padding:8px 12px;font-size:11px;color:var(--muted);">${r.location || '—'}</td>
+      </tr>
+    `).join('');
+    return `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;">📅 ${yr} Season</div>
+        <table style="width:100%;border-collapse:collapse;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);">
+          <thead><tr style="border-bottom:2px solid var(--border);">
+            <th style="padding:7px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);">Distance</th>
+            <th style="padding:7px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--muted);">Time</th>
+            <th style="padding:7px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--muted);">Pace</th>
+            <th style="padding:7px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);">Location</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }).join('');
 
   showModal(`
     <div class="modal-header">
@@ -2410,19 +2454,22 @@ function openPRModal() {
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
-      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;">
-        <thead>
-          <tr style="border-bottom:2px solid var(--border);background:var(--bg);">
-            <th style="padding:8px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">Distance</th>
-            <th style="padding:8px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">PB</th>
-            <th style="padding:8px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">Pace</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div style="padding-top:16px;border-top:1px solid var(--border);">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:12px;">Season Bests & PB Progression</div>
-        <div style="color:var(--muted);font-size:13px;font-style:italic;text-align:center;padding:16px 0;">Coming soon — data to be filled in 🏃</div>
+      <div style="margin-bottom:20px;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;">🏆 All-Time PBs</div>
+        <table style="width:100%;border-collapse:collapse;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);">
+          <thead><tr style="border-bottom:2px solid var(--border);">
+            <th style="padding:8px 14px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);">Distance</th>
+            <th style="padding:8px 14px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--muted);">Time</th>
+            <th style="padding:8px 14px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--muted);">Pace</th>
+            <th style="padding:8px 14px;text-align:center;font-size:10px;text-transform:uppercase;color:var(--muted);">Year</th>
+            <th style="padding:8px 14px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);">Location</th>
+          </tr></thead>
+          <tbody>${prRows}</tbody>
+        </table>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:12px;">📈 Season Bests</div>
+        ${seasonHTML}
       </div>
     </div>
     <div class="modal-footer">
