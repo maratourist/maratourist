@@ -154,7 +154,7 @@
   /* ── MAIN CONTENT ── */
   .page-wrapper {
     display: grid;
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 200px 1fr 200px;
     min-height: calc(100vh - 80px);
   }
   .sidebar {
@@ -166,6 +166,14 @@
     height: calc(100vh - 80px);
     overflow-y: auto;
   }
+  .sidebar-right {
+    border-left: 1px solid var(--border);
+    background: var(--card);
+    padding: 24px 16px;
+    position: sticky;
+    top: 80px;
+    height: calc(100vh - 80px);
+  }
   .sidebar-title {
     font-size: 10px;
     font-weight: 700;
@@ -175,17 +183,20 @@
     margin-bottom: 14px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border);
+    text-align: center;
   }
   .pr-item {
     padding: 10px 0;
     border-bottom: 1px solid var(--border);
     cursor: pointer;
+    text-align: center;
   }
   .pr-item:last-child { border-bottom: none; }
-  .pr-item:hover .pr-time { color: var(--run); }
+  .pr-item:hover .pr-time { color: var(--blue); }
   .pr-dist { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-  .pr-time { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--run); line-height: 1; transition: color 0.15s; }
+  .pr-time { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; color: var(--run); line-height: 1; transition: color 0.15s; }
   .pr-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .pr-location { font-size: 10px; color: var(--muted); opacity: 0.7; margin-top: 1px; }
 
   .main {
     padding: 32px 40px 60px;
@@ -1331,34 +1342,35 @@
       <div class="pr-dist">1 km</div>
       <div class="pr-time">4:36</div>
       <div class="pr-meta">4:36/km · 2025</div>
-      <div class="pr-meta" style="opacity:0.7;">Harris Farm Parkrun</div>
+      <div class="pr-location">Harris Avenue Parkrun</div>
     </div>
     <div class="pr-item">
       <div class="pr-dist">1 Mile</div>
       <div class="pr-time">7:30</div>
       <div class="pr-meta">4:40/km · 2026</div>
-      <div class="pr-meta" style="opacity:0.7;">Harris Farm Parkrun</div>
+      <div class="pr-location">Harris Avenue Parkrun</div>
     </div>
     <div class="pr-item">
       <div class="pr-dist">5 km</div>
       <div class="pr-time">23:53</div>
       <div class="pr-meta">4:46/km · 2026</div>
-      <div class="pr-meta" style="opacity:0.7;">Harris Avenue Parkrun</div>
+      <div class="pr-location">Harris Avenue Parkrun</div>
     </div>
     <div class="pr-item">
       <div class="pr-dist">10 km</div>
       <div class="pr-time">49:57</div>
       <div class="pr-meta">4:59/km · 2026</div>
-      <div class="pr-meta" style="opacity:0.7;">Jetty to Jetty Race</div>
+      <div class="pr-location">Jetty to Jetty Race</div>
     </div>
     <div class="pr-item">
       <div class="pr-dist">Half Marathon</div>
       <div class="pr-time">2:01:54</div>
       <div class="pr-meta">5:47/km · 2025</div>
-      <div class="pr-meta" style="opacity:0.7;">Wondai Half Marathon</div>
+      <div class="pr-location">Wondai Half Marathon</div>
     </div>
   </div>
   <div class="main" id="main"></div>
+  <div class="sidebar-right"></div>
 </div>
 
 <div id="modal-root"></div>
