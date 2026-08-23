@@ -35,9 +35,8 @@
   /* ── HEADER ── */
   header {
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: 24px;
     padding: 16px 40px;
     background: var(--card);
     border-bottom: 1px solid var(--border);
@@ -153,13 +152,44 @@
   .breadcrumb .sep { color: #b8c1cf; }
 
   /* ── MAIN CONTENT ── */
+  .page-wrapper {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    min-height: calc(100vh - 80px);
+  }
+  .sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--card);
+    padding: 24px 16px;
+    position: sticky;
+    top: 80px;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+  }
+  .sidebar-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .pr-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .pr-item:last-child { border-bottom: none; }
+  .pr-item:hover .pr-time { color: var(--run); }
+  .pr-dist { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .pr-time { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--run); line-height: 1; transition: color 0.15s; }
+  .pr-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
   .main {
     padding: 32px 40px 60px;
-    max-width: 1300px;
-    margin: 0 auto;
   }
-
-  .page-header {
     margin-bottom: 28px;
   }
   .page-title {
@@ -1286,42 +1316,50 @@
       <div class="hstat-pend" id="stat-pk-pend">–</div>
     </div>
   </div>
-  <div onclick="openPRModal()" style="cursor:pointer;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:0 24px;" title="Click to see full PR details">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px;text-align:center;">⚡ Personal Records</div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
-      <div style="text-align:center;">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">4:36</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px;">1 km</div>
-        <div style="font-size:9px;color:var(--muted);opacity:0.7;">4:36/km · 2025</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">7:30</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px;">1 Mile</div>
-        <div style="font-size:9px;color:var(--muted);opacity:0.7;">4:40/km · 2026</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">23:53</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px;">5 km</div>
-        <div style="font-size:9px;color:var(--muted);opacity:0.7;">4:46/km · 2026</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">49:57</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px;">10 km</div>
-        <div style="font-size:9px;color:var(--muted);opacity:0.7;">4:59/km · 2026</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--run);line-height:1;">2:01:54</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px;">Half</div>
-        <div style="font-size:9px;color:var(--muted);opacity:0.7;">5:47/km · 2025</div>
-      </div>
-    </div>
-  </div>
   <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;">
+    <button onclick="openProjetoModal()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🌍 50+</button>
+    <button class="admin-lock-btn" id="admin-lock-btn" onclick="toggleAdminMode()" title="Admin"></button>
+  </div>
 </header>
 
 <div class="breadcrumb" id="breadcrumb"></div>
 
-<div class="main" id="main"></div>
+<div class="page-wrapper">
+  <div class="sidebar" onclick="openPRModal()" title="Click to see full PR details & season bests">
+    <div class="sidebar-title">⚡ Personal Records</div>
+    <div class="pr-item">
+      <div class="pr-dist">1 km</div>
+      <div class="pr-time">4:36</div>
+      <div class="pr-meta">4:36/km · 2025</div>
+      <div class="pr-meta" style="opacity:0.7;">Harris Farm Parkrun</div>
+    </div>
+    <div class="pr-item">
+      <div class="pr-dist">1 Mile</div>
+      <div class="pr-time">7:30</div>
+      <div class="pr-meta">4:40/km · 2026</div>
+      <div class="pr-meta" style="opacity:0.7;">Harris Farm Parkrun</div>
+    </div>
+    <div class="pr-item">
+      <div class="pr-dist">5 km</div>
+      <div class="pr-time">23:53</div>
+      <div class="pr-meta">4:46/km · 2026</div>
+      <div class="pr-meta" style="opacity:0.7;">Harris Avenue Parkrun</div>
+    </div>
+    <div class="pr-item">
+      <div class="pr-dist">10 km</div>
+      <div class="pr-time">49:57</div>
+      <div class="pr-meta">4:59/km · 2026</div>
+      <div class="pr-meta" style="opacity:0.7;">Jetty to Jetty Race</div>
+    </div>
+    <div class="pr-item">
+      <div class="pr-dist">Half Marathon</div>
+      <div class="pr-time">2:01:54</div>
+      <div class="pr-meta">5:47/km · 2025</div>
+      <div class="pr-meta" style="opacity:0.7;">Wondai Half Marathon</div>
+    </div>
+  </div>
+  <div class="main" id="main"></div>
+</div>
 
 <div id="modal-root"></div>
 
@@ -2389,22 +2427,25 @@ let pkCurrentFilters = { country: '', city: '', state: '', status: '' };
 // ════════════════════════════════════════
 const PR_DATA = {
   records: [
-    { dist: '1 km',          time: '4:36',    pace: '4:36/km', year: 2025, location: 'Harris Farm Parkrun' },
-    { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', year: 2026, location: 'Harris Farm Parkrun' },
-    { dist: '5 km',          time: '23:53',   pace: '4:46/km', year: 2026, location: null },
+    { dist: '1 km',          time: '4:36',    pace: '4:36/km', year: 2025, location: 'Harris Avenue Parkrun' },
+    { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', year: 2026, location: 'Harris Avenue Parkrun' },
+    { dist: '5 km',          time: '23:53',   pace: '4:46/km', year: 2026, location: 'Harris Avenue Parkrun' },
     { dist: '10 km',         time: '49:57',   pace: '4:59/km', year: 2026, location: 'Jetty to Jetty Race' },
-    { dist: 'Half Marathon', time: '2:01:54', pace: '5:47/km', year: 2025, location: null },
+    { dist: 'Half Marathon', time: '2:01:54', pace: '5:47/km', year: 2025, location: 'Wondai Half Marathon' },
   ],
   seasonBests: {
     2025: [
+      { dist: '1 km',          time: '4:44',    pace: '4:44/km', location: 'Redcliffe Parkrun' },
       { dist: '1 Mile',        time: '7:41',    pace: '4:46/km', location: 'New Farm Park TT' },
-      { dist: 'Half Marathon', time: '2:01:54', pace: '5:47/km', location: null },
+      { dist: '5 km',          time: '24:51',   pace: '4:58/km', location: 'Wishart Parkrun' },
+      { dist: '10 km',         time: '52:20',   pace: '5:13/km', location: 'Bridge to Brisbane' },
+      { dist: 'Half Marathon', time: '2:01:54', pace: '5:47/km', location: 'Wondai Half Marathon' },
     ],
     2026: [
-      { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', location: 'Harris Farm Parkrun' },
-      { dist: '5 km',          time: '23:53',   pace: '4:46/km', location: null },
+      { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', location: 'Harris Avenue Parkrun' },
+      { dist: '5 km',          time: '23:53',   pace: '4:46/km', location: 'Harris Avenue Parkrun' },
       { dist: '10 km',         time: '49:57',   pace: '4:59/km', location: 'Jetty to Jetty Race' },
-      { dist: 'Half Marathon', time: '2:02:17', pace: '5:48/km', location: null },
+      { dist: 'Half Marathon', time: '2:02:17', pace: '5:48/km', location: 'Hervey Bay Half Marathon' },
     ],
   }
 };
