@@ -2662,7 +2662,51 @@ function openProjetoModal() {
 // ════════════════════════════════════════
 // WORLD MAP
 // ════════════════════════════════════════
-const COUNTRY_NAMES = {};
+
+// ISO numeric → country name lookup (world-atlas IDs)
+const ATLAS_NAMES = {
+  4:'Afghanistan',8:'Albania',12:'Algeria',24:'Angola',32:'Argentina',36:'Australia',
+  40:'Austria',50:'Bangladesh',56:'Belgium',68:'Bolivia',76:'Brazil',100:'Bulgaria',
+  104:'Myanmar',116:'Cambodia',120:'Cameroon',124:'Canada',152:'Chile',156:'China',
+  170:'Colombia',180:'DR Congo',188:'Costa Rica',191:'Croatia',192:'Cuba',196:'Cyprus',
+  203:'Czech Republic',208:'Denmark',218:'Ecuador',818:'Egypt',231:'Ethiopia',
+  246:'Finland',250:'France',276:'Germany',288:'Ghana',300:'Greece',320:'Guatemala',
+  332:'Haiti',340:'Honduras',348:'Hungary',356:'India',360:'Indonesia',364:'Iran',
+  368:'Iraq',372:'Ireland',376:'Israel',380:'Italy',388:'Jamaica',392:'Japan',
+  400:'Jordan',398:'Kazakhstan',404:'Kenya',408:'North Korea',410:'South Korea',
+  414:'Kuwait',418:'Laos',422:'Lebanon',430:'Liberia',434:'Libya',484:'Mexico',
+  504:'Morocco',508:'Mozambique',516:'Namibia',524:'Nepal',528:'Netherlands',
+  554:'New Zealand',566:'Nigeria',578:'Norway',586:'Pakistan',591:'Panama',
+  598:'Papua New Guinea',600:'Paraguay',604:'Peru',608:'Philippines',616:'Poland',
+  620:'Portugal',630:'Puerto Rico',634:'Qatar',642:'Romania',643:'Russia',
+  682:'Saudi Arabia',686:'Senegal',694:'Sierra Leone',706:'Somalia',710:'South Africa',
+  724:'Spain',144:'Sri Lanka',729:'Sudan',752:'Sweden',756:'Switzerland',
+  760:'Syria',764:'Thailand',792:'Turkey',800:'Uganda',804:'Ukraine',784:'UAE',
+  826:'United Kingdom',840:'United States',858:'Uruguay',860:'Uzbekistan',
+  862:'Venezuela',704:'Vietnam',887:'Yemen',894:'Zambia',716:'Zimbabwe',
+  191:'Croatia',246:'Finland',528:'Netherlands',703:'Slovakia',705:'Slovenia',
+  499:'Montenegro',807:'North Macedonia',70:'Bosnia & Herz.',688:'Serbia',
+  208:'Denmark',372:'Ireland',
+};
+
+// Name aliases to match your DB country names to atlas IDs
+const NAME_TO_ATLAS = {};
+Object.entries(ATLAS_NAMES).forEach(([id, name]) => { NAME_TO_ATLAS[name.toLowerCase()] = Number(id); });
+
+function buildVisitedIds() {
+  const ids = new Set();
+  if (!countriesCache || !countryStats) return ids;
+  countriesCache.forEach(c => {
+    const isVisited = c.visited || (countryStats[c.id] && (countryStats[c.id].hm > 0 || countryStats[c.id].pk > 0));
+    if (!isVisited) return;
+    // First try map_id from DB
+    if (c.map_id) { ids.add(String(c.map_id)); return; }
+    // Fallback: match by name
+    const atlasId = NAME_TO_ATLAS[c.name?.toLowerCase()];
+    if (atlasId) ids.add(String(atlasId));
+  });
+  return ids;
+}
 
 function loadWorldMap(visitedIds) {
   const container = document.getElementById('world-map-container');
@@ -2674,15 +2718,11 @@ function loadWorldMap(visitedIds) {
     const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
     const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
 
-    // Calculate available height — viewport minus header, tabs, stats bar, legend
-    const headerH = document.querySelector('header')?.offsetHeight || 80;
-    const tabsH = document.querySelector('.home-tabs')?.offsetHeight || 50;
-    const statsH = document.querySelector('.map-stat-bar')?.offsetHeight || 60;
-    const legendH = 30;
-    const padding = 80;
-    const availH = window.innerHeight - headerH - tabsH - statsH - legendH - padding;
+    const headerH = 80;
+    const padding = 120;
+    const availH = window.innerHeight - headerH - padding;
     const width = container.offsetWidth || 600;
-    const height = Math.min(availH, Math.round(width * 0.52));
+    const height = Math.min(availH, Math.round(width * 0.5));
 
     container.innerHTML = '';
     const svg = d3.select(container).append('svg')
@@ -2700,16 +2740,12 @@ function loadWorldMap(visitedIds) {
     if (!tip) {
       tip = document.createElement('div');
       tip.id = 'map-tooltip';
-      tip.style.cssText = 'position:fixed;pointer-events:none;background:var(--card);border:0.5px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--text);opacity:0;transition:opacity 0.1s;z-index:999;';
+      tip.style.cssText = 'position:fixed;pointer-events:none;background:var(--card);border:0.5px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--text);opacity:0;transition:opacity 0.1s;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
       document.body.appendChild(tip);
     }
 
     d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
-      // Load country names from a separate source
-      d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(() => {});
-
       const countries = topojson.feature(world, world.objects.countries);
-
       svg.selectAll('path')
         .data(countries.features)
         .join('path')
@@ -2719,9 +2755,9 @@ function loadWorldMap(visitedIds) {
         .attr('stroke-width', 0.5)
         .attr('cursor', 'pointer')
         .on('mousemove', function(event, d) {
-          const name = COUNTRY_NAMES[d.id] || countriesCache.find(c => String(c.map_id) === String(d.id))?.name || ('ID: ' + d.id);
+          const name = ATLAS_NAMES[d.id] || ('ID: ' + d.id);
           const isVisited = visitedIds.has(String(d.id));
-          tip.innerHTML = name + (isVisited ? ' <span style="color:#2a78d6;">✓</span>' : '');
+          tip.innerHTML = name + (isVisited ? ' <span style="color:#2a78d6;margin-left:4px;">✓</span>' : '');
           tip.style.opacity = '1';
           tip.style.left = (event.clientX + 12) + 'px';
           tip.style.top = (event.clientY - 30) + 'px';
@@ -3030,11 +3066,8 @@ async function render() {
     const pendingCount = totalCountries - visitedCount;
     const pct = totalCountries > 0 ? ((visitedCount / totalCountries) * 100).toFixed(2) : '0.00';
 
-    // Build visited numeric IDs from map_id column in countries table
-    const visitedNumericIds = new Set();
-    visitedCountries.forEach(c => {
-      if (c.map_id) visitedNumericIds.add(String(c.map_id));
-    });
+    // Build visited numeric IDs from map_id column or name matching
+    const visitedNumericIds = buildVisitedIds();
 
     main.innerHTML = `
       <div class="home-tabs">
