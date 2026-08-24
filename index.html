@@ -154,26 +154,27 @@
   /* ── MAIN CONTENT ── */
   .page-wrapper {
     display: grid;
-    grid-template-columns: 180px 1fr 220px;
-    min-height: calc(100vh - 80px);
-    align-items: start;
+    grid-template-columns: 200px 1fr 260px;
+    height: calc(100vh - 80px);
+    overflow: hidden;
   }
   .sidebar {
     border-right: 1px solid var(--border);
     background: var(--card);
     padding: 24px 16px;
-    position: sticky;
-    top: 80px;
-    height: calc(100vh - 80px);
+    height: 100%;
     overflow-y: auto;
   }
   .sidebar-right {
     border-left: 1px solid var(--border);
     background: var(--card);
     padding: 20px 14px;
-    position: sticky;
-    top: 80px;
-    height: calc(100vh - 80px);
+    height: 100%;
+    overflow-y: auto;
+  }
+  .main {
+    padding: 24px 32px;
+    height: 100%;
     overflow-y: auto;
   }
   .sidebar-title {
@@ -200,9 +201,7 @@
   .pr-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
   .pr-location { font-size: 10px; color: var(--muted); opacity: 0.7; margin-top: 1px; }
 
-  .main {
-    padding: 32px 40px 60px;
-  }
+  .page-header {
     margin-bottom: 28px;
   }
   .page-title {
@@ -2663,8 +2662,7 @@ function openProjetoModal() {
 // ════════════════════════════════════════
 // WORLD MAP
 // ════════════════════════════════════════
-let d3Loaded = false;
-let topoLoaded = false;
+const COUNTRY_NAMES = {};
 
 function loadWorldMap(visitedIds) {
   const container = document.getElementById('world-map-container');
@@ -2676,26 +2674,63 @@ function loadWorldMap(visitedIds) {
     const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
     const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
 
-    const width = container.offsetWidth || 700;
-    const height = Math.round(width * 0.52);
+    // Calculate available height — viewport minus header, tabs, stats bar, legend
+    const headerH = document.querySelector('header')?.offsetHeight || 80;
+    const tabsH = document.querySelector('.home-tabs')?.offsetHeight || 50;
+    const statsH = document.querySelector('.map-stat-bar')?.offsetHeight || 60;
+    const legendH = 30;
+    const padding = 80;
+    const availH = window.innerHeight - headerH - tabsH - statsH - legendH - padding;
+    const width = container.offsetWidth || 600;
+    const height = Math.min(availH, Math.round(width * 0.52));
 
     container.innerHTML = '';
     const svg = d3.select(container).append('svg')
       .attr('viewBox', `0 0 ${width} ${height}`)
-      .attr('width', '100%');
+      .attr('width', '100%')
+      .attr('height', height);
 
-    const projection = d3.geoNaturalEarth1().scale(width / 6.4).translate([width / 2, height / 2]);
+    const projection = d3.geoNaturalEarth1()
+      .scale(width / 6.5)
+      .translate([width / 2, height / 2]);
     const path = d3.geoPath(projection);
 
+    // Tooltip
+    let tip = document.getElementById('map-tooltip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.id = 'map-tooltip';
+      tip.style.cssText = 'position:fixed;pointer-events:none;background:var(--card);border:0.5px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--text);opacity:0;transition:opacity 0.1s;z-index:999;';
+      document.body.appendChild(tip);
+    }
+
     d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
+      // Load country names from a separate source
+      d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(() => {});
+
       const countries = topojson.feature(world, world.objects.countries);
+
       svg.selectAll('path')
         .data(countries.features)
         .join('path')
         .attr('d', path)
         .attr('fill', d => visitedIds.has(String(d.id)) ? fillVisited : fillDefault)
         .attr('stroke', strokeColor)
-        .attr('stroke-width', 0.5);
+        .attr('stroke-width', 0.5)
+        .attr('cursor', 'pointer')
+        .on('mousemove', function(event, d) {
+          const name = COUNTRY_NAMES[d.id] || countriesCache.find(c => String(c.map_id) === String(d.id))?.name || ('ID: ' + d.id);
+          const isVisited = visitedIds.has(String(d.id));
+          tip.innerHTML = name + (isVisited ? ' <span style="color:#2a78d6;">✓</span>' : '');
+          tip.style.opacity = '1';
+          tip.style.left = (event.clientX + 12) + 'px';
+          tip.style.top = (event.clientY - 30) + 'px';
+          d3.select(this).attr('fill', isVisited ? '#185FA5' : (isDark ? '#3a3a38' : '#d3d1c7'));
+        })
+        .on('mouseleave', function(event, d) {
+          tip.style.opacity = '0';
+          d3.select(this).attr('fill', visitedIds.has(String(d.id)) ? fillVisited : fillDefault);
+        });
     }).catch(() => {
       container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Map unavailable</div>';
     });
@@ -2704,7 +2739,7 @@ function loadWorldMap(visitedIds) {
   if (window.d3 && window.topojson) {
     renderMap();
   } else {
-    // Load D3 and TopoJSON dynamically
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>';
     const s1 = document.createElement('script');
     s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
     s1.onload = () => {
@@ -2734,7 +2769,7 @@ async function loadHeaderStats() {
     { data: hmResults },
     { data: tourismEntries }
   ] = await Promise.all([
-    sb.from('countries').select('id, visited'),
+    sb.from('countries').select('id, visited, map_id'),
     sb.from('cities').select('id, country_id, cover_photo, description'),
     sb.from('parkrun_locations').select('id, city_id'),
     sb.from('parkrun_results').select('location_id'),
@@ -2995,15 +3030,11 @@ async function render() {
     const pendingCount = totalCountries - visitedCount;
     const pct = totalCountries > 0 ? ((visitedCount / totalCountries) * 100).toFixed(2) : '0.00';
 
-    // Map of visited country ISO alpha-3 codes (for D3 world atlas numeric IDs)
-    // Australia=36, Brazil=76
+    // Build visited numeric IDs from map_id column in countries table
     const visitedNumericIds = new Set();
     visitedCountries.forEach(c => {
       if (c.map_id) visitedNumericIds.add(String(c.map_id));
     });
-    // Hardcode known IDs for now — Australia and Brazil
-    if (visitedCountries.find(c => c.name === 'Australia')) visitedNumericIds.add('36');
-    if (visitedCountries.find(c => c.name === 'Brazil')) visitedNumericIds.add('76');
 
     main.innerHTML = `
       <div class="home-tabs">
