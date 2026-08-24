@@ -2934,29 +2934,30 @@ async function loadHMMap() {
     });
   }
 
-  // Query all HM results with race and city details
-  const { data: results } = await sb.from('half_marathon_results')
-    .select(`
-      finish_time, pace, event_date,
-      half_marathon_races!inner(id, name, city_id,
-        cities!inner(id, name, latitude, longitude))
-    `);
+  // Query with flat approach
+  const { data: hmResults } = await sb.from('half_marathon_results')
+    .select('finish_time, pace, event_date, race_id');
+  const { data: hmRaces } = await sb.from('half_marathon_races')
+    .select('id, name, city_id');
+  const raceMap = Object.fromEntries((hmRaces||[]).map(r => [r.id, r]));
 
-  // Group by city
+  const cityIds = [...new Set((hmResults||[]).map(r => raceMap[r.race_id]?.city_id).filter(Boolean))];
+  let cityRows = [];
+  if (cityIds.length > 0) {
+    const { data } = await sb.from('cities').select('id, name, latitude, longitude').in('id', cityIds).not('latitude', 'is', null);
+    cityRows = data || [];
+  }
+  const cityById = Object.fromEntries(cityRows.map(c => [c.id, c]));
+
+  // Group results by city
   const cityMap = {};
-  (results||[]).forEach(r => {
-    const race = r.half_marathon_races;
-    const city = race?.cities;
-    if (!city?.latitude || !city?.longitude) return;
-    if (!cityMap[city.id]) {
-      cityMap[city.id] = { name: city.name, lat: city.latitude, lng: city.longitude, races: [] };
-    }
-    cityMap[city.id].races.push({
-      race: race.name,
-      time: r.finish_time,
-      pace: r.pace,
-      date: r.event_date,
-    });
+  (hmResults||[]).forEach(r => {
+    const race = raceMap[r.race_id];
+    if (!race) return;
+    const city = cityById[race.city_id];
+    if (!city) return;
+    if (!cityMap[city.id]) cityMap[city.id] = { name: city.name, lat: city.latitude, lng: city.longitude, races: [] };
+    cityMap[city.id].races.push({ race: race.name, time: r.finish_time, pace: r.pace, date: r.event_date });
   });
 
   container.innerHTML = '';
