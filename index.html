@@ -3129,10 +3129,9 @@ async function loadStatesMap(country) {
   const mainlandOnly = country === 'AU' ? {
     type: 'FeatureCollection',
     features: geoData.features.filter(f => {
-      // Only use mainland bounding box — exclude island-only features
       const bounds = d3.geoBounds(f);
-      const [minLon] = bounds[0], [maxLon] = bounds[1];
-      return minLon > 110 && maxLon < 155; // mainland AU longitude range
+      const [minLon] = bounds[0];
+      return minLon > 100; // exclude only far external territories
     })
   } : geoData;
 
