@@ -1686,7 +1686,7 @@ async function loadAllStats() {
       { data: allResults },
       { data: allTourism }
     ] = await Promise.all([
-      sb.from('cities').select('id, name, country_id, state, population, cover_photo, description'),
+      sb.from('cities').select('id, name, country_id, state, population, cover_photo, description, latitude, longitude'),
       sb.from('half_marathon_races').select('id, city_id'),
       sb.from('parkrun_locations').select('id, city_id'),
       sb.from('parkrun_results').select('location_id'),
@@ -2882,6 +2882,37 @@ function loadWorldMap() {
   }
 }
 
+async function backfillHMCityCoords() {
+  // Get all cities that have HM races but no coordinates
+  const { data: hmRaces } = await sb.from('half_marathon_races').select('city_id');
+  const cityIds = [...new Set((hmRaces||[]).map(r => r.city_id).filter(Boolean))];
+  if (!cityIds.length) return;
+
+  const { data: cities } = await sb.from('cities')
+    .select('id, name, state, country_id')
+    .in('id', cityIds)
+    .is('latitude', null);
+  if (!cities?.length) return;
+
+  const { data: countries } = await sb.from('countries').select('id, name');
+  const countryMap = Object.fromEntries((countries||[]).map(c => [c.id, c.name]));
+
+  console.log('[Backfill] Fetching coords for', cities.length, 'cities...');
+  const BATCH = 3;
+  for (let i = 0; i < cities.length; i += BATCH) {
+    await Promise.all(cities.slice(i, i + BATCH).map(async city => {
+      try {
+        const wikiData = await fetchWikiCityData(city.name, countryMap[city.country_id] || '', city.state || '');
+        if (wikiData.latitude != null) {
+          await sb.from('cities').update({ latitude: wikiData.latitude, longitude: wikiData.longitude }).eq('id', city.id);
+          console.log('[Backfill] ✓', city.name, wikiData.latitude, wikiData.longitude);
+        }
+      } catch(e) {}
+    }));
+  }
+  console.log('[Backfill] Done!');
+}
+
 async function loadHMMap() {
   const container = document.getElementById('hm-map-container');
   if (!container) return;
@@ -2967,6 +2998,7 @@ function setHomeTab(btn, tab) {
       <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--muted);">
         <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>Half Marathon</span>
       </div>`;
+    backfillHMCityCoords().then(() => loadHMMap());
     loadHMMap();
   }
 }
@@ -3485,18 +3517,17 @@ async function render() {
 
     main.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted);">Loading...</div>';
 
-    const { data: cityFresh } = await sb.from('cities').select('*').eq('id', city.id).single();
+    const { data: cityFresh } = await sb.from('cities').select('id, name, country_id, state, population, cover_photo, description, latitude, longitude').eq('id', city.id).single();
     const cityData = cityFresh || city;
 
     // Auto-fetch missing city data from Wikipedia
-    const needsWiki = !cityData.population || cityData.elevation == null || cityData.latitude == null;
+    const needsWiki = !cityData.population || cityData.latitude == null;
     if (needsWiki) {
       const wikiData = await fetchWikiCityData(cityData.name, country.name, cityData.state || '');
       const updates = {};
       if (!cityData.population && wikiData.population) { cityData.population = wikiData.population; updates.population = wikiData.population; }
-      if (cityData.elevation == null && wikiData.elevation != null) { cityData.elevation = wikiData.elevation; updates.elevation = wikiData.elevation; }
       if (cityData.latitude == null && wikiData.latitude != null) { cityData.latitude = wikiData.latitude; cityData.longitude = wikiData.longitude; updates.latitude = wikiData.latitude; updates.longitude = wikiData.longitude; }
-      if (Object.keys(updates).length) sb.from('cities').update(updates).eq('id', cityData.id);
+      if (Object.keys(updates).length) await sb.from('cities').update(updates).eq('id', cityData.id);
     }
 
     function qsBox(icon, done, total, label, color) {
