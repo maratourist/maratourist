@@ -3111,7 +3111,7 @@ async function loadStatesMap(country) {
 
   // GeoJSON sources
   const geoUrl = country === 'AU'
-    ? 'https://raw.githubusercontent.com/tonywr71/GeoJson-Data/master/australian-states.min.geojson'
+    ? 'https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/australia-states.geojson'
     : 'https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson';
 
   const geoData = await fetch(geoUrl).then(r => r.json()).catch(() => null);
@@ -3135,13 +3135,18 @@ async function loadStatesMap(country) {
     })
   } : geoData;
 
-  // State code field differs by dataset
-  const getCode = (f) => {
-    if (country === 'AU') return f.properties.STATE_NAME; // e.g. "Queensland"
-    return f.properties.sigla; // e.g. "PR"
+  // Fix winding order for AU (some GeoJSON sources have reversed rings)
+  if (country === 'AU') {
+    geoData.features = geoData.features.map(f => ({
+      ...f,
+      geometry: d3.geoRewind(f.geometry, true)
+    }));
+  }
+
+  const getStateName = (f) => {
+    return f.properties.STATE_NAME || f.properties.name || f.properties.NAME || '—';
   };
 
-  // Map AU state names to codes
   const AU_NAME_TO_CODE = {
     'Queensland':'QLD','New South Wales':'NSW','Victoria':'VIC','Western Australia':'WA',
     'South Australia':'SA','Tasmania':'TAS','Northern Territory':'NT','Australian Capital Territory':'ACT'
@@ -3149,10 +3154,11 @@ async function loadStatesMap(country) {
 
   const isDone = (f) => {
     if (country === 'AU') {
-      const code = AU_NAME_TO_CODE[f.properties.STATE_NAME] || f.properties.STATE_ABBREV;
+      const name = getStateName(f);
+      const code = AU_NAME_TO_CODE[name] || name;
       return doneStates.has(code);
     }
-    return doneStates.has(f.properties.sigla);
+    return doneStates.has(f.properties.sigla || f.properties.name);
   };
 
   const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -3209,7 +3215,7 @@ async function loadStatesMap(country) {
     .attr('stroke-width', 0.8)
     .attr('cursor', 'pointer')
     .on('mousemove', function(event, d) {
-      const name = d.properties.STATE_NAME || d.properties.name || d.properties.sigla || '—';
+      const name = getStateName(d);
       const done = isDone(d);
       tip.innerHTML = name + (done ? ' <span style="color:#2a78d6;margin-left:6px;">✓</span>' : '');
       tip.style.opacity = '1';
