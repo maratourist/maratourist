@@ -279,7 +279,7 @@
 
   /* Map stats bar */
   .map-stat-bar {
-    display:flex; gap:24px; align-items:center;
+    display:flex; gap:24px; align-items:center; justify-content:center;
     padding:12px 20px; background:var(--card);
     border:1px solid var(--border); border-radius:10px;
     margin-bottom:16px;
@@ -2732,25 +2732,37 @@ function loadWorldMap() {
   if (!container) return;
 
   async function renderMap() {
-    // Query visited countries directly - simple and reliable
     const visitedIds = new Set();
-    const [{ data: hmResults }, { data: pkResults }] = await Promise.all([
-      sb.from('half_marathon_results').select('race_id, half_marathon_races(city_id, cities(country_id, countries(name, map_id)))'),
-      sb.from('parkrun_results').select('location_id, parkrun_locations(city_id, cities(country_id, countries(name, map_id)))')
+
+    // Get all city_ids that have at least one result
+    const [{ data: hmRaces }, { data: pkLocs }] = await Promise.all([
+      sb.from('half_marathon_results').select('half_marathon_races!inner(city_id)'),
+      sb.from('parkrun_results').select('parkrun_locations!inner(city_id)')
     ]);
 
-    (hmResults || []).forEach(r => {
-      const country = r.half_marathon_races?.cities?.countries;
-      if (country?.map_id) visitedIds.add(String(country.map_id));
-      else if (country?.name) { const id = NAME_TO_ATLAS[country.name.toLowerCase()]; if (id) visitedIds.add(String(id)); }
-    });
-    (pkResults || []).forEach(r => {
-      const country = r.parkrun_locations?.cities?.countries;
-      if (country?.map_id) visitedIds.add(String(country.map_id));
-      else if (country?.name) { const id = NAME_TO_ATLAS[country.name.toLowerCase()]; if (id) visitedIds.add(String(id)); }
-    });
+    const cityIds = new Set();
+    (hmRaces || []).forEach(r => { if (r.half_marathon_races?.city_id) cityIds.add(r.half_marathon_races.city_id); });
+    (pkLocs  || []).forEach(r => { if (r.parkrun_locations?.city_id)  cityIds.add(r.parkrun_locations.city_id);  });
 
-    console.log('[Map] visited countries:', [...visitedIds]);
+    if (cityIds.size > 0) {
+      const { data: cities } = await sb.from('cities')
+        .select('country_id')
+        .in('id', [...cityIds]);
+      const countryIds = [...new Set((cities || []).map(c => c.country_id))];
+
+      if (countryIds.length > 0) {
+        const { data: countries } = await sb.from('countries')
+          .select('name, map_id')
+          .in('id', countryIds);
+        (countries || []).forEach(c => {
+          if (c.map_id) { visitedIds.add(String(c.map_id)); return; }
+          const id = NAME_TO_ATLAS[c.name?.toLowerCase()];
+          if (id) visitedIds.add(String(id));
+        });
+      }
+    }
+
+    console.log('[Map] visitedIds:', [...visitedIds]);
 
     const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
     const fillVisited = '#2a78d6';
@@ -2768,7 +2780,27 @@ function loadWorldMap() {
       .style('display', 'block');
 
     const projection = d3.geoNaturalEarth1()
-      .scale(Math.min(width / 7.5, height / 4.2))
+      .scale(Math.min(width / 6.2, height / 3.5))
+      .translate([width / 2, height / 2]);
+    const path = d3.geoPath(projection);
+
+    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const fillVisited = '#2a78d6';
+    const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
+    const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
+
+    const width = container.offsetWidth || 600;
+    const height = container.offsetHeight || 300;
+
+    container.innerHTML = '';
+    const svg = d3.select(container).append('svg')
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .style('width', '100%')
+      .style('height', '100%')
+      .style('display', 'block');
+
+    const projection = d3.geoNaturalEarth1()
+      .scale(Math.min(width / 6.2, height / 3.5))
       .translate([width / 2, height / 2]);
     const path = d3.geoPath(projection);
 
@@ -3129,8 +3161,8 @@ async function render() {
             <div class="map-stat-val">${totalCountries}</div>
             <div class="map-stat-label">Total</div>
           </div>
-          <div style="flex:1;"></div>
-          <div style="text-align:right;">
+          <div style="width:1px;height:36px;background:var(--border);"></div>
+          <div class="map-stat-item">
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--blue);line-height:1;">${pct}%</div>
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">of the world</div>
           </div>
