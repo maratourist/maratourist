@@ -2755,13 +2755,16 @@ function loadWorldMap() {
           .select('name, map_id')
           .in('id', countryIds);
         (countries || []).forEach(c => {
-          if (c.map_id) { visitedIds.add(String(c.map_id)); return; }
-          // Hardcoded known IDs as ultimate fallback
-          const hardcoded = { 'australia': '36', 'brazil': '76', 'united states': '840', 'united kingdom': '826' };
-          const hc = hardcoded[c.name?.toLowerCase()];
-          if (hc) { visitedIds.add(hc); return; }
-          const id = NAME_TO_ATLAS[c.name?.toLowerCase()];
-          if (id) visitedIds.add(String(id));
+          let id = c.map_id ? String(c.map_id).padStart(3, '0') : null;
+          if (!id) {
+            const hardcoded = { 'australia': '036', 'brazil': '076', 'united states': '840', 'united kingdom': '826' };
+            id = hardcoded[c.name?.toLowerCase()];
+          }
+          if (!id) {
+            const atlasId = NAME_TO_ATLAS[c.name?.toLowerCase()];
+            if (atlasId) id = String(atlasId).padStart(3, '0');
+          }
+          if (id) visitedIds.add(id);
         });
       }
     }
@@ -2803,12 +2806,12 @@ function loadWorldMap() {
         .data(countries.features)
         .join('path')
         .attr('d', path)
-        .attr('fill', d => visitedIds.has(String(d.id)) || visitedIds.has(d.id) ? fillVisited : fillDefault)
+        .attr('fill', d => visitedIds.has(d.id) ? fillVisited : fillDefault)
         .attr('stroke', strokeColor)
         .attr('stroke-width', 0.5)
         .on('mousemove', function(event, d) {
           const name = ATLAS_NAMES[d.id] || ATLAS_NAMES[Number(d.id)] || '—';
-          const isVisited = visitedIds.has(String(d.id)) || visitedIds.has(d.id);
+          const isVisited = visitedIds.has(d.id);
           tip.innerHTML = name + (isVisited ? ' <span style="color:#2a78d6;margin-left:4px;">✓</span>' : '');
           tip.style.opacity = '1';
           tip.style.left = (event.clientX + 12) + 'px';
@@ -2817,7 +2820,7 @@ function loadWorldMap() {
         })
         .on('mouseleave', function(event, d) {
           tip.style.opacity = '0';
-          d3.select(this).attr('fill', (visitedIds.has(String(d.id)) || visitedIds.has(d.id)) ? fillVisited : fillDefault);
+          d3.select(this).attr('fill', visitedIds.has(d.id) ? fillVisited : fillDefault);
         });
     }).catch(() => {
       container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Map unavailable</div>';
