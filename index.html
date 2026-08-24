@@ -3073,31 +3073,22 @@ async function loadPKMap() {
   }
 
   // Flat queries
-  const { data: pkResults } = await sb.from('parkrun_results').select('location_id');
-  const { data: pkLocs }    = await sb.from('parkrun_locations').select('id, name, city_id');
+  const { data: pkResults } = await sb.from('parkrun_results')
+    .select('location_id, run_date, finish_time, pace');
+  const { data: pkLocs } = await sb.from('parkrun_locations')
+    .select('id, name, latitude, longitude')
+    .not('latitude', 'is', null);
 
   const locMap = Object.fromEntries((pkLocs||[]).map(l => [l.id, l]));
 
-  // Count results per location and group by city
-  const cityData = {};
+  // Group results by location
+  const locData = {};
   (pkResults||[]).forEach(r => {
     const loc = locMap[r.location_id];
     if (!loc) return;
-    if (!cityData[loc.city_id]) cityData[loc.city_id] = { locations: {}, total: 0 };
-    if (!cityData[loc.city_id].locations[loc.name]) cityData[loc.city_id].locations[loc.name] = 0;
-    cityData[loc.city_id].locations[loc.name]++;
-    cityData[loc.city_id].total++;
+    if (!locData[loc.id]) locData[loc.id] = { name: loc.name, lat: loc.latitude, lng: loc.longitude, runs: [] };
+    locData[loc.id].runs.push({ date: r.run_date, time: r.finish_time, pace: r.pace });
   });
-
-  const cityIds = Object.keys(cityData);
-  let cities = [];
-  if (cityIds.length > 0) {
-    const { data } = await sb.from('cities')
-      .select('id, name, latitude, longitude')
-      .in('id', cityIds)
-      .not('latitude', 'is', null);
-    cities = data || [];
-  }
 
   container.innerHTML = '';
   const map = L.map(container, { center: [20, 10], zoom: 2, minZoom: 2, maxZoom: 14 });
@@ -3116,28 +3107,26 @@ async function loadPKMap() {
     iconSize: [28, 40], iconAnchor: [14, 40], popupAnchor: [0, -42],
   });
 
-  cities.forEach(city => {
-    const cd = cityData[city.id];
-    if (!cd) return;
-
-    const locsHTML = Object.entries(cd.locations)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0f0ee;">
-          <span style="font-size:12px;color:#1a1a1a;">🏃 ${name}</span>
-          <span style="font-family:monospace;font-size:12px;color:#2a78d6;font-weight:700;margin-left:12px;">${count}x</span>
+  Object.values(locData).forEach(loc => {
+    const runsHTML = loc.runs
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+      .map(r => `
+        <div style="display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid #f0f0ee;">
+          ${r.date ? `<span style="font-family:monospace;font-size:12px;color:#888;">${r.date.split('-').reverse().join('/')}</span>` : ''}
+          ${r.time ? `<span style="font-family:monospace;font-size:12px;color:#2a78d6;font-weight:700;">${r.time}</span>` : ''}
+          ${r.pace ? `<span style="font-family:monospace;font-size:12px;color:#888;">${r.pace}/km</span>` : ''}
         </div>`).join('');
 
     const popupHTML = `
-      <div style="min-width:220px;font-family:-apple-system,sans-serif;">
-        <div style="font-size:15px;font-weight:800;color:#1a1a1a;margin-bottom:4px;">📍 ${city.name}</div>
-        <div style="font-family:monospace;font-size:18px;font-weight:700;color:#22c55e;margin-bottom:10px;">${cd.total} parkrun${cd.total > 1 ? 's' : ''}</div>
-        ${locsHTML}
+      <div style="min-width:240px;font-family:-apple-system,sans-serif;max-height:300px;overflow-y:auto;">
+        <div style="font-size:15px;font-weight:800;color:#1a1a1a;margin-bottom:2px;">🏃 ${loc.name}</div>
+        <div style="font-family:monospace;font-size:16px;font-weight:700;color:#22c55e;margin-bottom:10px;">${loc.runs.length} run${loc.runs.length > 1 ? 's' : ''}</div>
+        ${runsHTML}
       </div>`;
 
-    L.marker([city.latitude, city.longitude], { icon: greenIcon })
+    L.marker([loc.lat, loc.lng], { icon: greenIcon })
       .addTo(map)
-      .bindPopup(popupHTML, { maxWidth: 300 });
+      .bindPopup(popupHTML, { maxWidth: 320 });
   });
 }
 
