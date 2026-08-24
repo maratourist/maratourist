@@ -2821,13 +2821,15 @@ function loadWorldMap() {
       document.body.appendChild(tip);
     }
 
+    // Create g group first so zoom handler can reference it
+    const g = svg.append('g');
+
     // Zoom setup
     let currentZoom = null;
     const zoom = d3.zoom()
       .scaleExtent([1, 12])
       .on('zoom', (event) => {
         g.attr('transform', event.transform);
-        // Adjust stroke width on zoom
         g.selectAll('path').attr('stroke-width', 0.5 / event.transform.k);
       });
     svg.call(zoom);
@@ -2849,7 +2851,6 @@ function loadWorldMap() {
 
     d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
       const countries = topojson.feature(world, world.objects.countries);
-      const g = svg.append('g');
 
       g.selectAll('path')
         .data(countries.features)
