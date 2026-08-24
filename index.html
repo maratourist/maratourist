@@ -2936,7 +2936,7 @@ async function loadHMMap() {
 
   // Query with flat approach
   const { data: hmResults } = await sb.from('half_marathon_results')
-    .select('finish_time, pace, event_date, race_id');
+    .select('finish_time, pace, run_date, race_id');
   const { data: hmRaces } = await sb.from('half_marathon_races')
     .select('id, name, city_id');
   const raceMap = Object.fromEntries((hmRaces||[]).map(r => [r.id, r]));
@@ -2957,7 +2957,7 @@ async function loadHMMap() {
     const city = cityById[race.city_id];
     if (!city) return;
     if (!cityMap[city.id]) cityMap[city.id] = { name: city.name, lat: city.latitude, lng: city.longitude, races: [] };
-    cityMap[city.id].races.push({ race: race.name, time: r.finish_time, pace: r.pace, date: r.event_date });
+    cityMap[city.id].races.push({ race: race.name, time: r.finish_time, pace: r.pace, date: r.run_date });
   });
 
   container.innerHTML = '';
