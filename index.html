@@ -3228,29 +3228,33 @@ async function loadStatesMap(country) {
       resetBtn.style.opacity = '1';
     });
 
-      // State abbreviation labels
-      const BR_NAME_TO_CODE = {
-        'Acre':'AC','Alagoas':'AL','Amapá':'AP','Amazonas':'AM','Bahia':'BA','Ceará':'CE',
-        'Distrito Federal':'DF','Espírito Santo':'ES','Goiás':'GO','Maranhão':'MA',
-        'Mato Grosso':'MT','Mato Grosso do Sul':'MS','Minas Gerais':'MG','Pará':'PA',
-        'Paraíba':'PB','Paraná':'PR','Pernambuco':'PE','Piauí':'PI','Rio de Janeiro':'RJ',
-        'Rio Grande do Norte':'RN','Rio Grande do Sul':'RS','Rondônia':'RO','Roraima':'RR',
-        'Santa Catarina':'SC','São Paulo':'SP','Sergipe':'SE','Tocantins':'TO'
-      };
-      g.selectAll('text').data(geoData.features).join('text')
-        .attr('transform', d => {
-          const c = path.centroid(d);
-          return isNaN(c[0]) ? 'translate(-999,-999)' : `translate(${c})`;
-        })
-        .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-        .attr('font-size', '10px').attr('font-weight', '700')
-        .attr('font-family', 'system-ui, sans-serif')
-        .attr('fill', d => isDone(d) ? '#fff' : (isDark ? '#888' : '#555'))
-        .attr('pointer-events', 'none')
-        .text(d => {
-          if (country === 'AU') return AU_NAME_TO_CODE[getStateName(d)] || d.properties.postal || '';
-          return d.properties.sigla || BR_NAME_TO_CODE[getStateName(d)] || '';
-        });
+  const BR_NAME_TO_CODE = {
+    'Acre':'AC','Alagoas':'AL','Amapá':'AP','Amazonas':'AM','Bahia':'BA','Ceará':'CE',
+    'Distrito Federal':'DF','Espírito Santo':'ES','Goiás':'GO','Maranhão':'MA',
+    'Mato Grosso':'MT','Mato Grosso do Sul':'MS','Minas Gerais':'MG','Pará':'PA',
+    'Paraíba':'PB','Paraná':'PR','Pernambuco':'PE','Piauí':'PI','Rio de Janeiro':'RJ',
+    'Rio Grande do Norte':'RN','Rio Grande do Sul':'RS','Rondônia':'RO','Roraima':'RR',
+    'Santa Catarina':'SC','São Paulo':'SP','Sergipe':'SE','Tocantins':'TO'
+  };
+
+  g.selectAll('text')
+    .data(geoData.features)
+    .join('text')
+    .attr('transform', d => {
+      const c = path.centroid(d);
+      return isNaN(c[0]) || isNaN(c[1]) ? 'translate(-9999,-9999)' : `translate(${c[0]},${c[1]})`;
+    })
+    .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'central')
+    .attr('font-size', '11px')
+    .attr('font-weight', '700')
+    .attr('font-family', 'system-ui, sans-serif')
+    .attr('fill', d => isDone(d) ? '#fff' : (isDark ? '#aaa' : '#555'))
+    .attr('pointer-events', 'none')
+    .text(d => {
+      if (country === 'AU') return AU_NAME_TO_CODE[getStateName(d)] || d.properties.postal || '';
+      return d.properties.sigla || BR_NAME_TO_CODE[getStateName(d)] || '';
+    });
 
   svg.on('click', () => { svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity); resetBtn.style.opacity='0'; });
 }
