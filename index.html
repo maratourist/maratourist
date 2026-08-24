@@ -154,8 +154,9 @@
   /* ── MAIN CONTENT ── */
   .page-wrapper {
     display: grid;
-    grid-template-columns: 200px 1fr 200px;
+    grid-template-columns: 180px 1fr 220px;
     min-height: calc(100vh - 80px);
+    align-items: start;
   }
   .sidebar {
     border-right: 1px solid var(--border);
@@ -169,10 +170,11 @@
   .sidebar-right {
     border-left: 1px solid var(--border);
     background: var(--card);
-    padding: 24px 16px;
+    padding: 20px 14px;
     position: sticky;
     top: 80px;
     height: calc(100vh - 80px);
+    overflow-y: auto;
   }
   .sidebar-title {
     font-size: 10px;
@@ -241,6 +243,53 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
   }
+
+  /* Compact region cards for right sidebar */
+  .region-card-compact {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .region-card-compact:hover { border-color: var(--blue); background: var(--bg); }
+  .region-card-compact::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: var(--accent-color, var(--blue));
+  }
+  .region-card-compact-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .region-card-compact-name { font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; color:var(--text); }
+  .region-card-compact-meta { font-size:11px; color:var(--muted); margin-bottom:6px; }
+  .region-card-compact-tags { display:flex; gap:4px; flex-wrap:wrap; }
+
+  /* Home map tabs */
+  .home-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+  .home-tab {
+    padding:8px 18px; border-radius:8px; font-size:13px; font-weight:600;
+    border:1.5px solid var(--border); background:var(--card); cursor:pointer;
+    color:var(--muted); transition:all 0.15s;
+  }
+  .home-tab:hover { border-color:var(--blue); color:var(--blue); }
+  .home-tab.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+  /* Map stats bar */
+  .map-stat-bar {
+    display:flex; gap:24px; align-items:center;
+    padding:12px 20px; background:var(--card);
+    border:1px solid var(--border); border-radius:10px;
+    margin-bottom:16px;
+  }
+  .map-stat-item { text-align:center; }
+  .map-stat-val { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:var(--text); line-height:1; }
+  .map-stat-label { font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted); margin-top:2px; }
+  .map-stat-pct { font-size:11px; color:var(--muted); }
+  .map-stat-remaining { font-size:11px; color:#d03030; }
 
   .region-card {
     background: var(--card);
@@ -1370,7 +1419,17 @@
     </div>
   </div>
   <div class="main" id="main"></div>
-  <div class="sidebar-right"></div>
+  <div class="sidebar-right" id="sidebar-right">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);">🌍 Explorer</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      <button onclick="goGlobalHalfMarathons()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--run)';this.style.color='var(--run)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏅 All Half Marathons</button>
+      <button onclick="goGlobalParkruns()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--parkrun)';this.style.color='var(--parkrun)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏃 All Parkruns</button>
+      <button onclick="goGlobalCities()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏙️ All Cities</button>
+    </div>
+    <div id="sidebar-regions" style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px;">Regions</div>
+    </div>
+  </div>
 </div>
 
 <div id="modal-root"></div>
@@ -2601,6 +2660,70 @@ function openProjetoModal() {
   `);
 }
 
+// ════════════════════════════════════════
+// WORLD MAP
+// ════════════════════════════════════════
+let d3Loaded = false;
+let topoLoaded = false;
+
+function loadWorldMap(visitedIds) {
+  const container = document.getElementById('world-map-container');
+  if (!container) return;
+
+  function renderMap() {
+    const isDark = document.documentElement.dataset.mode === 'dark' || matchMedia('(prefers-color-scheme: dark)').matches;
+    const fillVisited = '#2a78d6';
+    const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
+    const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
+
+    const width = container.offsetWidth || 700;
+    const height = Math.round(width * 0.52);
+
+    container.innerHTML = '';
+    const svg = d3.select(container).append('svg')
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('width', '100%');
+
+    const projection = d3.geoNaturalEarth1().scale(width / 6.4).translate([width / 2, height / 2]);
+    const path = d3.geoPath(projection);
+
+    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
+      const countries = topojson.feature(world, world.objects.countries);
+      svg.selectAll('path')
+        .data(countries.features)
+        .join('path')
+        .attr('d', path)
+        .attr('fill', d => visitedIds.has(String(d.id)) ? fillVisited : fillDefault)
+        .attr('stroke', strokeColor)
+        .attr('stroke-width', 0.5);
+    }).catch(() => {
+      container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Map unavailable</div>';
+    });
+  }
+
+  if (window.d3 && window.topojson) {
+    renderMap();
+  } else {
+    // Load D3 and TopoJSON dynamically
+    const s1 = document.createElement('script');
+    s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js';
+      s2.onload = renderMap;
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s1);
+  }
+}
+
+function setHomeTab(btn, tab) {
+  document.querySelectorAll('.home-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Future: swap map content based on tab
+  // For now only Countries tab has the map
+}
+
 async function loadHeaderStats() {
   const [
     { data: allCountries },
@@ -2826,41 +2949,104 @@ async function render() {
   // LEVEL 0: WORLD
   if (state.region === null) {
     updateBreadcrumb({});
-    main.innerHTML = `
-      <div class="page-header">
-        <div class="page-title" style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;">🌍 World Explorer</div>
-        <div class="page-subtitle">Select a region to explore countries, cities and adventures</div>
-      </div>
-      <div style="margin-bottom: 28px; display:flex; gap:16px; flex-wrap:wrap;">
-        <button class="hero-cta-btn" style="flex:1;" onclick="goGlobalHalfMarathons()">🏅 All Half Marathons</button>
-        <button class="hero-cta-btn" style="flex:1;" onclick="goGlobalParkruns()">🏃 All Parkruns</button>
-        <button class="hero-cta-btn" style="flex:1;" onclick="goGlobalCities()">🏙️ All Cities</button>
-      </div>
-      <div class="region-grid">
-        ${regionsCache.map(r => {
+
+    // Populate right sidebar with compact region cards
+    const sidebarRegions = document.getElementById('sidebar-regions');
+    if (sidebarRegions && regionsCache.length > 0) {
+      const existing = sidebarRegions.querySelectorAll('.region-card-compact');
+      if (existing.length === 0) {
+        const tags = sidebarRegions.querySelector('div');
+        regionsCache.forEach(r => {
           const countriesHere = countriesInRegion(r.id);
           const visited = countriesHere.filter(c => {
             if (c.visited) return true;
             const cs = countryStats[c.id];
-            return cs && (cs.hm > 0 || cs.pk > 0 || cs.tourism > 0);
+            return cs && (cs.hm > 0 || cs.pk > 0);
           }).length;
-          const rs = regionStats[r.id] || { hm: 0, hmTotal: 0, pk: 0, pkTotal: 0, cities: 0, citiesVisited: 0, tourism: 0 };
-          return `
-          <div class="region-card" style="--accent-color:${r.color}" onclick="go('region','${r.id}')">
-            <div class="region-card-top">
-              <div class="region-emoji">${r.emoji}</div>
+          const rs = regionStats[r.id] || {};
+          const card = document.createElement('div');
+          card.className = 'region-card-compact';
+          card.style.setProperty('--accent-color', r.color);
+          card.onclick = () => go('region', r.id);
+          card.innerHTML = `
+            <div class="region-card-compact-header">
+              <span style="font-size:16px;">${r.emoji}</span>
+              <span class="region-card-compact-name">${r.name}</span>
             </div>
-            <div class="region-card-name">${r.name}</div>
-            <div class="region-card-meta">${countriesHere.length} countries &amp; territories total</div>
-            <div class="region-card-tags">
-              <span class="tag tag-travel">✓ ${visited} visited</span>
-              ${rs.cities > 0 ? `<span class="tag" style="background:#f0f4ff;color:var(--blue);">🏙️ ${rs.citiesVisited||0}/${rs.cities} Cities</span>` : ''}
-              ${rs.hmTotal > 0 ? `<span class="tag tag-run">🏅 ${rs.hm}/${rs.hmTotal} Half Marathons</span>` : ''}
-              ${rs.pkTotal > 0 ? `<span class="tag tag-park">🏃 ${rs.pk}/${rs.pkTotal} Parkrun${rs.pkTotal===1?'':'s'}</span>` : ''}
-            </div>
-          </div>`;
-        }).join('')}
+            <div class="region-card-compact-meta">${countriesHere.length} countries</div>
+            <div class="region-card-compact-tags">
+              <span class="tag tag-travel" style="font-size:10px;padding:2px 6px;">✓ ${visited} visited</span>
+              ${rs.hmTotal > 0 ? `<span class="tag tag-run" style="font-size:10px;padding:2px 6px;">🏅 ${rs.hm}/${rs.hmTotal}</span>` : ''}
+              ${rs.pkTotal > 0 ? `<span class="tag tag-park" style="font-size:10px;padding:2px 6px;">🏃 ${rs.pk}/${rs.pkTotal}</span>` : ''}
+            </div>`;
+          sidebarRegions.appendChild(card);
+        });
+      }
+    }
+
+    // Calculate country stats for map
+    const totalCountries = countriesCache.length;
+    const visitedCountries = countriesCache.filter(c => {
+      if (c.visited) return true;
+      const cs = countryStats[c.id];
+      return cs && (cs.hm > 0 || cs.pk > 0);
+    });
+    const visitedCount = visitedCountries.length;
+    const pendingCount = totalCountries - visitedCount;
+    const pct = totalCountries > 0 ? ((visitedCount / totalCountries) * 100).toFixed(2) : '0.00';
+
+    // Map of visited country ISO alpha-3 codes (for D3 world atlas numeric IDs)
+    // Australia=36, Brazil=76
+    const visitedNumericIds = new Set();
+    visitedCountries.forEach(c => {
+      if (c.map_id) visitedNumericIds.add(String(c.map_id));
+    });
+    // Hardcode known IDs for now — Australia and Brazil
+    if (visitedCountries.find(c => c.name === 'Australia')) visitedNumericIds.add('36');
+    if (visitedCountries.find(c => c.name === 'Brazil')) visitedNumericIds.add('76');
+
+    main.innerHTML = `
+      <div class="home-tabs">
+        <button class="home-tab active" onclick="setHomeTab(this,'countries')">🌍 Countries</button>
+        <button class="home-tab" onclick="setHomeTab(this,'states')">🗺️ States</button>
+        <button class="home-tab" onclick="setHomeTab(this,'cities')">🏙️ Cities</button>
+        <button class="home-tab" onclick="setHomeTab(this,'halfmarathons')">🏅 Half Marathons</button>
+        <button class="home-tab" onclick="setHomeTab(this,'parkruns')">🏃 Parkruns</button>
+      </div>
+
+      <div id="home-tab-content">
+        <div class="map-stat-bar">
+          <div class="map-stat-item">
+            <div class="map-stat-val">${visitedCount}</div>
+            <div class="map-stat-label">Visited</div>
+          </div>
+          <div style="width:1px;height:36px;background:var(--border);"></div>
+          <div class="map-stat-item">
+            <div class="map-stat-val" style="color:#d03030;">${pendingCount}</div>
+            <div class="map-stat-label">Remaining</div>
+          </div>
+          <div style="width:1px;height:36px;background:var(--border);"></div>
+          <div class="map-stat-item">
+            <div class="map-stat-val">${totalCountries}</div>
+            <div class="map-stat-label">Total</div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="text-align:right;">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--blue);line-height:1;">${pct}%</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">of the world</div>
+          </div>
+        </div>
+        <div id="world-map-container" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--card);">
+          <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;margin-top:10px;font-size:12px;color:var(--muted);">
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#2a78d6;display:inline-block;"></span>Visited</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#e1e0d9;border:0.5px solid #c3c2b7;display:inline-block;"></span>Not visited</span>
+        </div>
       </div>`;
+
+    // Load D3 map
+    loadWorldMap(visitedNumericIds);
     return;
   }
 
