@@ -3039,7 +3039,106 @@ function setHomeTab(btn, tab) {
         <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:#22c55e;display:inline-block;"></span>Half Marathon completed</span>
       </div>`;
     loadHMMap();
+
+  } else if (tab === 'parkruns') {
+    content.innerHTML = `
+      <div id="pk-map-container" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);height:calc(100vh - 420px);min-height:220px;">
+        <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--muted);">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:#22c55e;display:inline-block;"></span>Parkruns completed</span>
+      </div>`;
+    loadPKMap();
   }
+}
+
+async function loadPKMap() {
+  const container = document.getElementById('pk-map-container');
+  if (!container) return;
+
+  if (container._leaflet_map) { container._leaflet_map.remove(); delete container._leaflet_id; }
+
+  if (!document.getElementById('leaflet-css')) {
+    const link = document.createElement('link');
+    link.id = 'leaflet-css'; link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(link);
+  }
+  if (!window.L) {
+    await new Promise(resolve => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      s.onload = resolve; document.head.appendChild(s);
+    });
+  }
+
+  // Flat queries
+  const { data: pkResults } = await sb.from('parkrun_results').select('location_id');
+  const { data: pkLocs }    = await sb.from('parkrun_locations').select('id, name, city_id');
+
+  const locMap = Object.fromEntries((pkLocs||[]).map(l => [l.id, l]));
+
+  // Count results per location and group by city
+  const cityData = {};
+  (pkResults||[]).forEach(r => {
+    const loc = locMap[r.location_id];
+    if (!loc) return;
+    if (!cityData[loc.city_id]) cityData[loc.city_id] = { locations: {}, total: 0 };
+    if (!cityData[loc.city_id].locations[loc.name]) cityData[loc.city_id].locations[loc.name] = 0;
+    cityData[loc.city_id].locations[loc.name]++;
+    cityData[loc.city_id].total++;
+  });
+
+  const cityIds = Object.keys(cityData);
+  let cities = [];
+  if (cityIds.length > 0) {
+    const { data } = await sb.from('cities')
+      .select('id, name, latitude, longitude')
+      .in('id', cityIds)
+      .not('latitude', 'is', null);
+    cities = data || [];
+  }
+
+  container.innerHTML = '';
+  const map = L.map(container, { center: [20, 10], zoom: 2, minZoom: 2, maxZoom: 14 });
+  container._leaflet_map = map;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(map);
+
+  const greenIcon = L.divIcon({
+    className: '',
+    html: `<svg width="28" height="40" viewBox="0 0 28 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 0C6.27 0 0 6.27 0 14c0 9.33 14 26 14 26S28 23.33 28 14C28 6.27 21.73 0 14 0z" fill="#22c55e" stroke="#fff" stroke-width="2"/>
+      <circle cx="14" cy="14" r="6" fill="#fff"/>
+    </svg>`,
+    iconSize: [28, 40], iconAnchor: [14, 40], popupAnchor: [0, -42],
+  });
+
+  cities.forEach(city => {
+    const cd = cityData[city.id];
+    if (!cd) return;
+
+    const locsHTML = Object.entries(cd.locations)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0f0ee;">
+          <span style="font-size:12px;color:#1a1a1a;">🏃 ${name}</span>
+          <span style="font-family:monospace;font-size:12px;color:#2a78d6;font-weight:700;margin-left:12px;">${count}x</span>
+        </div>`).join('');
+
+    const popupHTML = `
+      <div style="min-width:220px;font-family:-apple-system,sans-serif;">
+        <div style="font-size:15px;font-weight:800;color:#1a1a1a;margin-bottom:4px;">📍 ${city.name}</div>
+        <div style="font-family:monospace;font-size:18px;font-weight:700;color:#22c55e;margin-bottom:10px;">${cd.total} parkrun${cd.total > 1 ? 's' : ''}</div>
+        ${locsHTML}
+      </div>`;
+
+    L.marker([city.latitude, city.longitude], { icon: greenIcon })
+      .addTo(map)
+      .bindPopup(popupHTML, { maxWidth: 300 });
+  });
 }
 
 async function loadHeaderStats() {
