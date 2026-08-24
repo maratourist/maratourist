@@ -267,7 +267,17 @@
   .region-card-compact-meta { font-size:11px; color:var(--muted); margin-bottom:6px; }
   .region-card-compact-tags { display:flex; gap:4px; flex-wrap:wrap; }
 
-  /* Home map tabs */
+  .map-country-tip, .map-city-tip {
+    background: var(--card) !important;
+    border: 0.5px solid var(--border) !important;
+    border-radius: 7px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--text) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12) !important;
+  }
+  .map-country-tip::before, .map-city-tip::before { display: none !important; }
   .home-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
   .home-tab {
     padding:8px 18px; border-radius:8px; font-size:13px; font-weight:600;
@@ -2731,192 +2741,163 @@ function loadWorldMap() {
   const container = document.getElementById('world-map-container');
   if (!container) return;
 
-  async function renderMap() {
-    const visitedIds = new Set();
+  // Destroy existing Leaflet instance if any
+  if (container._leaflet_id) {
+    container._leaflet_map?.remove();
+    delete container._leaflet_id;
+  }
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>';
 
-    // Get all city_ids that have at least one result
+  async function initMap() {
+    // Load Leaflet CSS
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+      document.head.appendChild(link);
+    }
+
+    // Load Leaflet JS
+    if (!window.L) {
+      await new Promise(resolve => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+        s.onload = resolve;
+        document.head.appendChild(s);
+      });
+    }
+
+    // Query visited countries + HM cities
+    const visitedCountryNames = new Set();
+    const hmCities = [];
+
     const [{ data: hmRaces }, { data: pkLocs }] = await Promise.all([
       sb.from('half_marathon_results').select('half_marathon_races!inner(city_id)'),
       sb.from('parkrun_results').select('parkrun_locations!inner(city_id)')
     ]);
 
-    const cityIds = new Set();
-    (hmRaces || []).forEach(r => { if (r.half_marathon_races?.city_id) cityIds.add(r.half_marathon_races.city_id); });
-    (pkLocs  || []).forEach(r => { if (r.parkrun_locations?.city_id)  cityIds.add(r.parkrun_locations.city_id);  });
+    const hmCityIds = new Set();
+    const pkCityIds = new Set();
+    (hmRaces || []).forEach(r => { if (r.half_marathon_races?.city_id) hmCityIds.add(r.half_marathon_races.city_id); });
+    (pkLocs  || []).forEach(r => { if (r.parkrun_locations?.city_id)  pkCityIds.add(r.parkrun_locations.city_id);  });
 
-    if (cityIds.size > 0) {
-      const { data: cities } = await sb.from('cities')
-        .select('country_id')
-        .in('id', [...cityIds]);
-      const countryIds = [...new Set((cities || []).map(c => c.country_id))];
+    const allCityIds = new Set([...hmCityIds, ...pkCityIds]);
+    if (allCityIds.size > 0) {
+      const { data: cityRows } = await sb.from('cities')
+        .select('id, name, country_id, latitude, longitude')
+        .in('id', [...allCityIds]);
 
-      if (countryIds.length > 0) {
-        const { data: countries } = await sb.from('countries')
-          .select('name, map_id')
-          .in('id', countryIds);
-        (countries || []).forEach(c => {
-          let id = c.map_id ? String(c.map_id).padStart(3, '0') : null;
-          if (!id) {
-            const hardcoded = { 'australia': '036', 'brazil': '076', 'united states': '840', 'united kingdom': '826' };
-            id = hardcoded[c.name?.toLowerCase()];
-          }
-          if (!id) {
-            const atlasId = NAME_TO_ATLAS[c.name?.toLowerCase()];
-            if (atlasId) id = String(atlasId).padStart(3, '0');
-          }
-          if (id) visitedIds.add(id);
-        });
-      }
+      const countryIds = [...new Set((cityRows||[]).map(c => c.country_id))];
+      const { data: countryRows } = await sb.from('countries')
+        .select('id, name').in('id', countryIds);
+
+      const countryNameMap = {};
+      (countryRows||[]).forEach(c => { countryNameMap[c.id] = c.name; visitedCountryNames.add(c.name.toLowerCase()); });
+
+      (cityRows||[]).forEach(c => {
+        const isHM = hmCityIds.has(c.id);
+        const isPK = pkCityIds.has(c.id);
+        if (c.latitude && c.longitude) {
+          if (isHM) hmCities.push({ name: c.name, lat: c.latitude, lng: c.longitude, type: 'hm' });
+        }
+      });
     }
 
-    console.log('[Map] visitedIds:', [...visitedIds]);
-
-    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-    const fillVisited = '#2a78d6';
-    const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
-    const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
-
-    const width = container.offsetWidth || 600;
-    const height = container.offsetHeight || 300;
+    // Visited country ISO alpha-2 codes for coloring
+    const COUNTRY_ISO2 = {
+      'australia':'AU','brazil':'BR','united states':'US','united kingdom':'GB',
+      'france':'FR','germany':'DE','spain':'ES','italy':'IT','japan':'JP',
+      'china':'CN','india':'IN','canada':'CA','mexico':'MX','argentina':'AR',
+      'south africa':'ZA','new zealand':'NZ','portugal':'PT','netherlands':'NL',
+    };
 
     container.innerHTML = '';
-    const svg = d3.select(container).append('svg')
-      .attr('viewBox', `0 0 ${width} ${height}`)
-      .style('width', '100%')
-      .style('height', '100%')
-      .style('display', 'block');
-
-    const projection = d3.geoNaturalEarth1()
-      .scale(Math.min(width / 5.0, height / 2.8))
-      .translate([width / 2, height / 2]);
-    const path = d3.geoPath(projection);
-
-    let tip = document.getElementById('map-tooltip');
-    // ISO numeric (padded) → ISO alpha-2 for flag CDN
-    const FLAG_CODES = {
-      '004':'AF','008':'AL','012':'DZ','024':'AO','032':'AR','036':'AU','040':'AT',
-      '050':'BD','056':'BE','068':'BO','076':'BR','100':'BG','104':'MM','116':'KH',
-      '120':'CM','124':'CA','152':'CL','156':'CN','170':'CO','180':'CD','188':'CR',
-      '191':'HR','192':'CU','196':'CY','203':'CZ','208':'DK','218':'EC','818':'EG',
-      '231':'ET','246':'FI','250':'FR','276':'DE','288':'GH','300':'GR','320':'GT',
-      '332':'HT','340':'HN','348':'HU','356':'IN','360':'ID','364':'IR','368':'IQ',
-      '372':'IE','376':'IL','380':'IT','388':'JM','392':'JP','400':'JO','398':'KZ',
-      '404':'KE','410':'KR','408':'KP','414':'KW','418':'LA','422':'LB','434':'LY',
-      '484':'MX','504':'MA','508':'MZ','516':'NA','524':'NP','528':'NL','554':'NZ',
-      '558':'NI','562':'NE','566':'NG','578':'NO','512':'OM','586':'PK','591':'PA',
-      '598':'PG','600':'PY','604':'PE','608':'PH','616':'PL','620':'PT','634':'QA',
-      '642':'RO','643':'RU','646':'RW','682':'SA','686':'SN','688':'RS','706':'SO',
-      '710':'ZA','724':'ES','144':'LK','729':'SD','752':'SE','756':'CH','760':'SY',
-      '764':'TH','792':'TR','800':'UG','804':'UA','784':'AE','826':'GB','840':'US',
-      '858':'UY','860':'UZ','862':'VE','704':'VN','887':'YE','894':'ZM','716':'ZW',
-      '703':'SK','705':'SI','499':'ME','807':'MK','070':'BA','430':'LR','694':'SL',
-      '454':'MW','466':'ML','478':'MR','140':'CF','148':'TD','204':'BJ','854':'BF',
-      '108':'BI','266':'GA','178':'CG','426':'LS','748':'SZ','072':'BW',
-    };
-
-    if (!tip) {
-      tip = document.createElement('div');
-      tip.id = 'map-tooltip';
-      tip.style.cssText = 'position:fixed;pointer-events:none;background:var(--card);border:0.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--text);opacity:0;transition:opacity 0.1s;z-index:999;box-shadow:0 2px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px;';
-      document.body.appendChild(tip);
-    }
-
-    // Create g group first so zoom handler can reference it
-    const g = svg.append('g');
-
-    // Zoom setup
-    let currentZoom = null;
-    const zoom = d3.zoom()
-      .scaleExtent([1, 12])
-      .on('zoom', (event) => {
-        g.attr('transform', event.transform);
-        g.selectAll('path').attr('stroke-width', 0.5 / event.transform.k);
-      });
-    svg.call(zoom);
-
-    // Reset zoom button
-    let resetBtn = document.getElementById('map-reset-btn');
-    if (resetBtn) resetBtn.remove();
-    resetBtn = document.createElement('button');
-    resetBtn.id = 'map-reset-btn';
-    resetBtn.textContent = '⟳ Reset';
-    resetBtn.style.cssText = 'position:absolute;top:10px;right:10px;padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--muted);cursor:pointer;opacity:0;transition:opacity 0.2s;z-index:10;';
-    resetBtn.onclick = () => {
-      svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
-      resetBtn.style.opacity = '0';
-      currentZoom = null;
-    };
     container.style.position = 'relative';
-    container.appendChild(resetBtn);
 
-    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
-      const countries = topojson.feature(world, world.objects.countries);
+    const map = L.map(container, {
+      center: [20, 10],
+      zoom: 2,
+      minZoom: 2,
+      maxZoom: 14,
+      zoomControl: true,
+    });
+    container._leaflet_map = map;
 
-      g.selectAll('path')
-        .data(countries.features)
-        .join('path')
-        .attr('d', path)
-        .attr('fill', d => visitedIds.has(d.id) ? fillVisited : fillDefault)
-        .attr('stroke', strokeColor)
-        .attr('stroke-width', 0.5)
-        .attr('cursor', 'pointer')
-        .on('mousemove', function(event, d) {
-          const name = ATLAS_NAMES[d.id] || ATLAS_NAMES[Number(d.id)] || '—';
-          const iso2 = FLAG_CODES[d.id] || '';
-          const flag = iso2 ? `<img src="https://flagcdn.com/20x15/${iso2.toLowerCase()}.png" style="border-radius:2px;flex-shrink:0;">` : '';
-          const isVisited = visitedIds.has(d.id);
-          tip.innerHTML = flag + name + (isVisited ? '<span style="color:#2a78d6;margin-left:6px;">✓</span>' : '');
-          tip.style.opacity = '1';
-          tip.style.left = (event.clientX + 14) + 'px';
-          tip.style.top = (event.clientY - 36) + 'px';
-          if (!visitedIds.has(d.id)) d3.select(this).attr('fill', isDark ? '#3a3a38' : '#d3d1c7');
-        })
-        .on('mouseleave', function(event, d) {
-          tip.style.opacity = '0';
-          d3.select(this).attr('fill', visitedIds.has(d.id) ? fillVisited : fillDefault);
-        })
-        .on('click', function(event, d) {
-          event.stopPropagation();
-          const [[x0, y0], [x1, y1]] = path.bounds(d);
-          const cx = (x0 + x1) / 2;
-          const cy = (y0 + y1) / 2;
-          const bw = x1 - x0, bh = y1 - y0;
-          const scale = Math.min(8, 0.85 / Math.max(bw / width, bh / height));
-          const tx = width / 2 - scale * cx;
-          const ty = height / 2 - scale * cy;
-          svg.transition().duration(650).call(
-            zoom.transform,
-            d3.zoomIdentity.translate(tx, ty).scale(scale)
-          );
-          currentZoom = d.id;
-          resetBtn.style.opacity = '1';
+    // OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Overlay visited countries using GeoJSON
+    const geoResp = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+    const world = await geoResp.json();
+    const topojsonScript = await new Promise(resolve => {
+      if (window.topojson) { resolve(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js';
+      s.onload = resolve;
+      document.head.appendChild(s);
+    });
+
+    const ATLAS_TO_ISO2 = {
+      '036':'AU','076':'BR','840':'US','826':'GB','250':'FR','276':'DE','724':'ES',
+      '380':'IT','392':'JP','156':'CN','356':'IN','124':'CA','484':'MX','032':'AR',
+      '710':'ZA','554':'NZ','620':'PT','528':'NL','056':'BE','752':'SE','756':'CH',
+      '040':'AT','616':'PL','642':'RO','804':'UA','643':'RU','792':'TR','818':'EG',
+      '404':'KE','566':'NG','716':'ZW','704':'VN','764':'TH','608':'PH','360':'ID',
+    };
+
+    const countries = topojson.feature(world, world.objects.countries);
+    L.geoJSON(countries, {
+      style: feature => {
+        const iso2 = ATLAS_TO_ISO2[String(feature.id).padStart(3,'0')];
+        const name = iso2 ? Object.entries(ATLAS_TO_ISO2).find(([k,v]) => v === iso2)?.[0] : null;
+        const isVisited = iso2 && [...visitedCountryNames].some(n => {
+          const mapped = Object.entries(ATLAS_TO_ISO2).find(([k,v]) => v === iso2);
+          return mapped && ATLAS_NAMES[Number(mapped[0])]?.toLowerCase() === n;
         });
+        return {
+          fillColor: isVisited ? '#2a78d6' : 'transparent',
+          fillOpacity: isVisited ? 0.35 : 0,
+          color: 'transparent',
+          weight: 0,
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        const iso2 = ATLAS_TO_ISO2[String(feature.id).padStart(3,'0')];
+        const name = ATLAS_NAMES[Number(feature.id)] || feature.id;
+        const isVisited = iso2 && [...visitedCountryNames].some(n =>
+          ATLAS_NAMES[Number(feature.id)]?.toLowerCase() === n
+        );
+        layer.bindTooltip(
+          `${iso2 ? `<img src="https://flagcdn.com/20x15/${iso2.toLowerCase()}.png" style="border-radius:2px;vertical-align:middle;margin-right:6px;">` : ''}${name}${isVisited ? ' ✓' : ''}`,
+          { sticky: true, className: 'map-country-tip' }
+        );
+        layer.on('click', e => {
+          map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 8 });
+        });
+      }
+    }).addTo(map);
 
-      // Click on ocean to reset
-      svg.on('click', () => {
-        svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
-        resetBtn.style.opacity = '0';
-        currentZoom = null;
-      });
-    }).catch(() => {
-      container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Map unavailable</div>';
+    // HM markers
+    hmCities.forEach(city => {
+      const marker = L.circleMarker([city.lat, city.lng], {
+        radius: 7,
+        fillColor: '#f59e0b',
+        color: '#fff',
+        weight: 2,
+        fillOpacity: 0.9,
+      }).addTo(map);
+      marker.bindTooltip(`🏅 ${city.name}`, { className: 'map-city-tip' });
     });
   }
 
-  if (window.d3 && window.topojson) {
-    renderMap();
-  } else {
-    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>';
-    const s1 = document.createElement('script');
-    s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
-    s1.onload = () => {
-      const s2 = document.createElement('script');
-      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js';
-      s2.onload = () => renderMap();
-      document.head.appendChild(s2);
-    };
-    document.head.appendChild(s1);
-  }
+  initMap().catch(e => {
+    console.error('Map error:', e);
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Map unavailable</div>';
+  });
 }
 
 function setHomeTab(btn, tab) {
