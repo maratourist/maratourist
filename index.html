@@ -2792,36 +2792,111 @@ function loadWorldMap() {
     const path = d3.geoPath(projection);
 
     let tip = document.getElementById('map-tooltip');
+    // ISO numeric (padded) → ISO alpha-2 for flag CDN
+    const FLAG_CODES = {
+      '004':'AF','008':'AL','012':'DZ','024':'AO','032':'AR','036':'AU','040':'AT',
+      '050':'BD','056':'BE','068':'BO','076':'BR','100':'BG','104':'MM','116':'KH',
+      '120':'CM','124':'CA','152':'CL','156':'CN','170':'CO','180':'CD','188':'CR',
+      '191':'HR','192':'CU','196':'CY','203':'CZ','208':'DK','218':'EC','818':'EG',
+      '231':'ET','246':'FI','250':'FR','276':'DE','288':'GH','300':'GR','320':'GT',
+      '332':'HT','340':'HN','348':'HU','356':'IN','360':'ID','364':'IR','368':'IQ',
+      '372':'IE','376':'IL','380':'IT','388':'JM','392':'JP','400':'JO','398':'KZ',
+      '404':'KE','410':'KR','408':'KP','414':'KW','418':'LA','422':'LB','434':'LY',
+      '484':'MX','504':'MA','508':'MZ','516':'NA','524':'NP','528':'NL','554':'NZ',
+      '558':'NI','562':'NE','566':'NG','578':'NO','512':'OM','586':'PK','591':'PA',
+      '598':'PG','600':'PY','604':'PE','608':'PH','616':'PL','620':'PT','634':'QA',
+      '642':'RO','643':'RU','646':'RW','682':'SA','686':'SN','688':'RS','706':'SO',
+      '710':'ZA','724':'ES','144':'LK','729':'SD','752':'SE','756':'CH','760':'SY',
+      '764':'TH','792':'TR','800':'UG','804':'UA','784':'AE','826':'GB','840':'US',
+      '858':'UY','860':'UZ','862':'VE','704':'VN','887':'YE','894':'ZM','716':'ZW',
+      '703':'SK','705':'SI','499':'ME','807':'MK','070':'BA','430':'LR','694':'SL',
+      '454':'MW','466':'ML','478':'MR','140':'CF','148':'TD','204':'BJ','854':'BF',
+      '108':'BI','266':'GA','178':'CG','426':'LS','748':'SZ','072':'BW',
+    };
+
     if (!tip) {
       tip = document.createElement('div');
       tip.id = 'map-tooltip';
-      tip.style.cssText = 'position:fixed;pointer-events:none;background:var(--card);border:0.5px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--text);opacity:0;transition:opacity 0.1s;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,0.12);';
+      tip.style.cssText = 'position:fixed;pointer-events:none;background:var(--card);border:0.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--text);opacity:0;transition:opacity 0.1s;z-index:999;box-shadow:0 2px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px;';
       document.body.appendChild(tip);
     }
 
+    // Zoom setup
+    let currentZoom = null;
+    const zoom = d3.zoom()
+      .scaleExtent([1, 12])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
+        // Adjust stroke width on zoom
+        g.selectAll('path').attr('stroke-width', 0.5 / event.transform.k);
+      });
+    svg.call(zoom);
+
+    // Reset zoom button
+    let resetBtn = document.getElementById('map-reset-btn');
+    if (resetBtn) resetBtn.remove();
+    resetBtn = document.createElement('button');
+    resetBtn.id = 'map-reset-btn';
+    resetBtn.textContent = '⟳ Reset';
+    resetBtn.style.cssText = 'position:absolute;top:10px;right:10px;padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--muted);cursor:pointer;opacity:0;transition:opacity 0.2s;z-index:10;';
+    resetBtn.onclick = () => {
+      svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+      resetBtn.style.opacity = '0';
+      currentZoom = null;
+    };
+    container.style.position = 'relative';
+    container.appendChild(resetBtn);
+
     d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
       const countries = topojson.feature(world, world.objects.countries);
-      console.log('[D3] visitedIds at paint time:', [...visitedIds], 'sample d.id type:', typeof countries.features[0]?.id);
-      svg.selectAll('path')
+      const g = svg.append('g');
+
+      g.selectAll('path')
         .data(countries.features)
         .join('path')
         .attr('d', path)
         .attr('fill', d => visitedIds.has(d.id) ? fillVisited : fillDefault)
         .attr('stroke', strokeColor)
         .attr('stroke-width', 0.5)
+        .attr('cursor', 'pointer')
         .on('mousemove', function(event, d) {
           const name = ATLAS_NAMES[d.id] || ATLAS_NAMES[Number(d.id)] || '—';
+          const iso2 = FLAG_CODES[d.id] || '';
+          const flag = iso2 ? `<img src="https://flagcdn.com/20x15/${iso2.toLowerCase()}.png" style="border-radius:2px;flex-shrink:0;">` : '';
           const isVisited = visitedIds.has(d.id);
-          tip.innerHTML = name + (isVisited ? ' <span style="color:#2a78d6;margin-left:4px;">✓</span>' : '');
+          tip.innerHTML = flag + name + (isVisited ? '<span style="color:#2a78d6;margin-left:6px;">✓</span>' : '');
           tip.style.opacity = '1';
-          tip.style.left = (event.clientX + 12) + 'px';
-          tip.style.top = (event.clientY - 30) + 'px';
-          d3.select(this).attr('fill', isVisited ? '#185FA5' : (isDark ? '#3a3a38' : '#d3d1c7'));
+          tip.style.left = (event.clientX + 14) + 'px';
+          tip.style.top = (event.clientY - 36) + 'px';
+          if (!visitedIds.has(d.id)) d3.select(this).attr('fill', isDark ? '#3a3a38' : '#d3d1c7');
         })
         .on('mouseleave', function(event, d) {
           tip.style.opacity = '0';
           d3.select(this).attr('fill', visitedIds.has(d.id) ? fillVisited : fillDefault);
+        })
+        .on('click', function(event, d) {
+          event.stopPropagation();
+          const [[x0, y0], [x1, y1]] = path.bounds(d);
+          const cx = (x0 + x1) / 2;
+          const cy = (y0 + y1) / 2;
+          const bw = x1 - x0, bh = y1 - y0;
+          const scale = Math.min(8, 0.85 / Math.max(bw / width, bh / height));
+          const tx = width / 2 - scale * cx;
+          const ty = height / 2 - scale * cy;
+          svg.transition().duration(650).call(
+            zoom.transform,
+            d3.zoomIdentity.translate(tx, ty).scale(scale)
+          );
+          currentZoom = d.id;
+          resetBtn.style.opacity = '1';
         });
+
+      // Click on ocean to reset
+      svg.on('click', () => {
+        svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+        resetBtn.style.opacity = '0';
+        currentZoom = null;
+      });
     }).catch(() => {
       container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Map unavailable</div>';
     });
