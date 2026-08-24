@@ -1341,7 +1341,7 @@
     <div class="pr-item">
       <div class="pr-dist">1 km</div>
       <div class="pr-time">4:36</div>
-      <div class="pr-meta">4:36/km · 2025</div>
+      <div class="pr-meta">4:36/km · 2026</div>
       <div class="pr-location">Harris Avenue Parkrun</div>
     </div>
     <div class="pr-item">
@@ -2439,7 +2439,7 @@ let pkCurrentFilters = { country: '', city: '', state: '', status: '' };
 // ════════════════════════════════════════
 const PR_DATA = {
   records: [
-    { dist: '1 km',          time: '4:36',    pace: '4:36/km', year: 2025, event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
+    { dist: '1 km',          time: '4:36',    pace: '4:36/km', year: 2026, event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
     { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', year: 2026, event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
     { dist: '5 km',          time: '23:53',   pace: '4:46/km', year: 2026, event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
     { dist: '10 km',         time: '49:57',   pace: '4:59/km', year: 2026, event: 'Jetty to Jetty',                    city: 'Brisbane, AU' },
@@ -2470,18 +2470,31 @@ const PR_DATA = {
 };
 
 function openPRModal() {
-  const birthYear = 1989;
+  const calcAge = yr => yr - 1990; // born Dec 1989, so most of the year is age yr-1990
   const thCss = 'padding:9px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:center;white-space:nowrap;';
-  const cols = `<colgroup>
+
+  const colsPB = `<colgroup>
     <col style="width:120px"><col style="width:90px"><col style="width:75px">
     <col style="width:55px"><col style="width:45px"><col style="width:175px"><col style="width:155px">
   </colgroup>`;
-  const thead = `<thead><tr style="border-bottom:2px solid var(--border);background:var(--bg);">
+  const theadPB = `<thead><tr style="border-bottom:2px solid var(--border);background:var(--bg);">
     <th style="${thCss}text-align:left;">Distance</th>
     <th style="${thCss}">Time</th>
     <th style="${thCss}">Pace</th>
     <th style="${thCss}">Year</th>
     <th style="${thCss}">Age</th>
+    <th style="${thCss}text-align:left;">Event</th>
+    <th style="${thCss}text-align:left;">City / Country</th>
+  </tr></thead>`;
+
+  const colsSB = `<colgroup>
+    <col style="width:120px"><col style="width:90px"><col style="width:75px">
+    <col style="width:175px"><col style="width:260px">
+  </colgroup>`;
+  const theadSB = `<thead><tr style="border-bottom:2px solid var(--border);background:var(--bg);">
+    <th style="${thCss}text-align:left;">Distance</th>
+    <th style="${thCss}">Time</th>
+    <th style="${thCss}">Pace</th>
     <th style="${thCss}text-align:left;">Event</th>
     <th style="${thCss}text-align:left;">City / Country</th>
   </tr></thead>`;
@@ -2492,7 +2505,7 @@ function openPRModal() {
       <td style="padding:10px 14px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--run);">${r.time}</td>
       <td style="padding:10px 14px;text-align:center;color:var(--muted);font-size:12px;">${r.pace}</td>
       <td style="padding:10px 14px;text-align:center;font-size:12px;color:var(--muted);">${r.year}</td>
-      <td style="padding:10px 14px;text-align:center;font-size:12px;color:var(--muted);">${r.year - birthYear}</td>
+      <td style="padding:10px 14px;text-align:center;font-size:12px;color:var(--muted);">${calcAge(r.year)}</td>
       <td style="padding:10px 14px;font-size:12px;color:var(--text);">${r.event}</td>
       <td style="padding:10px 14px;font-size:12px;color:var(--muted);">${r.city}</td>
     </tr>
@@ -2500,24 +2513,21 @@ function openPRModal() {
 
   const years = Object.keys(PR_DATA.seasonBests).sort((a,b) => b-a);
   const seasonHTML = years.map(yr => {
-    const age = yr - birthYear;
     const bests = PR_DATA.seasonBests[yr];
     const rows = bests.map(r => `
       <tr style="border-bottom:1px solid var(--border);">
         <td style="padding:9px 14px;font-weight:700;color:var(--text);font-size:13px;">${r.dist}</td>
         <td style="padding:9px 14px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--blue);">${r.time}</td>
         <td style="padding:9px 14px;text-align:center;font-size:12px;color:var(--muted);">${r.pace}</td>
-        <td style="padding:9px 14px;text-align:center;font-size:12px;color:var(--muted);">${yr}</td>
-        <td style="padding:9px 14px;text-align:center;font-size:12px;color:var(--muted);">${age}</td>
         <td style="padding:9px 14px;font-size:12px;color:var(--text);">${r.event}</td>
         <td style="padding:9px 14px;font-size:12px;color:var(--muted);">${r.city}</td>
       </tr>
     `).join('');
     return `
       <div style="margin-bottom:20px;">
-        <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--border);">📅 ${yr} Season — Age ${age}</div>
+        <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--border);text-align:center;">📅 ${yr} Season — Age ${calcAge(yr)}</div>
         <table style="width:100%;border-collapse:collapse;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);">
-          ${cols}${thead}<tbody>${rows}</tbody>
+          ${colsSB}${theadSB}<tbody>${rows}</tbody>
         </table>
       </div>`;
   }).join('');
@@ -2529,13 +2539,13 @@ function openPRModal() {
     </div>
     <div class="modal-body" style="min-width:720px;">
       <div style="margin-bottom:24px;">
-        <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--border);">🏆 All-Time PBs</div>
+        <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--border);text-align:center;">🏆 All-Time PBs</div>
         <table style="width:100%;border-collapse:collapse;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);">
-          ${cols}${thead}<tbody>${prRows}</tbody>
+          ${colsPB}${theadPB}<tbody>${prRows}</tbody>
         </table>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:16px;">
-        <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:16px;padding:6px 0;border-bottom:1px solid var(--border);">📈 Season Bests</div>
+        <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:16px;padding:6px 0;border-bottom:1px solid var(--border);text-align:center;">📈 Season Bests</div>
         ${seasonHTML}
       </div>
     </div>
