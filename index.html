@@ -1757,6 +1757,10 @@ async function loadAllStats() {
     }
 
     statsLoaded = true;
+    // Re-render map if it's visible with correct visited IDs
+    if (document.getElementById('world-map-container')) {
+      loadWorldMap(buildVisitedIds());
+    }
   })();
 
   await statsLoadingPromise;
@@ -2718,11 +2722,16 @@ function loadWorldMap(visitedIds) {
     const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
     const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
 
-    const headerH = 80;
-    const padding = 120;
-    const availH = window.innerHeight - headerH - padding;
+    // Calculate remaining height in .main after tabs + stat bar + legend
+    const mainEl = document.querySelector('.main');
+    const tabsEl = document.querySelector('.home-tabs');
+    const statsEl = document.querySelector('.map-stat-bar');
+    const legendH = 36;
+    const usedH = (tabsEl?.offsetHeight||48) + (statsEl?.offsetHeight||60) + legendH + 48;
+    const mainH = mainEl?.offsetHeight || window.innerHeight - 80;
     const width = container.offsetWidth || 600;
-    const height = Math.min(availH, Math.round(width * 0.5));
+    const maxByRatio = Math.round(width * 0.48);
+    const height = Math.min(mainH - usedH, maxByRatio, window.innerHeight - 240);
 
     container.innerHTML = '';
     const svg = d3.select(container).append('svg')
@@ -3078,7 +3087,7 @@ async function render() {
         <button class="home-tab" onclick="setHomeTab(this,'parkruns')">🏃 Parkruns</button>
       </div>
 
-      <div id="home-tab-content">
+      <div id="home-tab-content" style="display:flex;flex-direction:column;gap:12px;">
         <div class="map-stat-bar">
           <div class="map-stat-item">
             <div class="map-stat-val">${visitedCount}</div>
