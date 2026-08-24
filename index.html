@@ -3121,7 +3121,12 @@ async function loadStatesMap(country) {
   if (country === 'AU') {
     geoData = {
       type: 'FeatureCollection',
-      features: geoData.features.filter(f => f.properties.admin === 'Australia' || f.properties.iso_a2 === 'AU' || f.properties.geonunit === 'Australia')
+      features: geoData.features.filter(f => 
+        (f.properties.admin === 'Australia' || f.properties.iso_a2 === 'AU' || f.properties.geonunit === 'Australia') &&
+        f.properties.name !== 'Jervis Bay Territory' &&
+        f.properties.name !== 'Ashmore and Cartier Islands' &&
+        f.properties.name !== 'Coral Sea Islands'
+      )
     };
   }
 
@@ -3255,6 +3260,36 @@ async function loadStatesMap(country) {
       if (country === 'AU') return AU_NAME_TO_CODE[getStateName(d)] || d.properties.postal || '';
       return d.properties.sigla || BR_NAME_TO_CODE[getStateName(d)] || '';
     });
+
+  // ACT callout — tiny state needs a pointer
+  if (country === 'AU') {
+    const actFeature = geoData.features.find(f => getStateName(f) === 'Australian Capital Territory');
+    if (actFeature) {
+      const c = path.centroid(actFeature);
+      if (!isNaN(c[0])) {
+        const offsetX = c[0] + 60, offsetY = c[1] - 30;
+        // Remove the regular ACT label (it's too small)
+        g.selectAll('text').filter(d => getStateName(d) === 'Australian Capital Territory').remove();
+        // Draw callout line
+        g.append('line')
+          .attr('x1', c[0]).attr('y1', c[1])
+          .attr('x2', offsetX).attr('y2', offsetY)
+          .attr('stroke', isDark ? '#888' : '#666')
+          .attr('stroke-width', 1)
+          .attr('pointer-events', 'none');
+        // Draw callout label
+        g.append('text')
+          .attr('x', offsetX + 4).attr('y', offsetY)
+          .attr('text-anchor', 'start')
+          .attr('dominant-baseline', 'central')
+          .attr('font-size', '11px').attr('font-weight', '700')
+          .attr('font-family', 'system-ui, sans-serif')
+          .attr('fill', isDone(actFeature) ? '#2a78d6' : (isDark ? '#aaa' : '#555'))
+          .attr('pointer-events', 'none')
+          .text('ACT');
+      }
+    }
+  }
 
   svg.on('click', () => { svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity); resetBtn.style.opacity='0'; });
 }
