@@ -3126,15 +3126,19 @@ async function loadStatesMap(country) {
   }
 
   const padding = 10;
-  // Fix winding order for AU (some GeoJSON sources have reversed rings)
+  // Fix winding order for AU GeoJSON (coordinates are CW, need CCW for D3)
   if (country === 'AU') {
-    geoData.features = geoData.features.map(f => ({
-      ...f,
-      geometry: d3.geoRewind(f.geometry)
-    }));
+    const reverseRing = ring => [...ring].reverse();
+    const reverseGeom = geom => {
+      if (!geom) return geom;
+      if (geom.type === 'Polygon') return { ...geom, coordinates: geom.coordinates.map(reverseRing) };
+      if (geom.type === 'MultiPolygon') return { ...geom, coordinates: geom.coordinates.map(poly => poly.map(reverseRing)) };
+      return geom;
+    };
+    geoData.features = geoData.features.map(f => ({ ...f, geometry: reverseGeom(f.geometry) }));
   }
 
-  // For AU fitExtent use only mainland + TAS (lon 110-155, lat -45 to -10)
+  // For AU fitExtent use only mainland + TAS
   const fitFeatures = country === 'AU' ? {
     type: 'FeatureCollection',
     features: geoData.features.filter(f => {
