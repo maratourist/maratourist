@@ -2669,28 +2669,43 @@ function openProjetoModal() {
 
 // ISO numeric → country name lookup (world-atlas IDs)
 const ATLAS_NAMES = {
-  4:'Afghanistan',8:'Albania',12:'Algeria',24:'Angola',32:'Argentina',36:'Australia',
-  40:'Austria',50:'Bangladesh',56:'Belgium',68:'Bolivia',76:'Brazil',100:'Bulgaria',
-  104:'Myanmar',116:'Cambodia',120:'Cameroon',124:'Canada',152:'Chile',156:'China',
-  170:'Colombia',180:'DR Congo',188:'Costa Rica',191:'Croatia',192:'Cuba',196:'Cyprus',
-  203:'Czech Republic',208:'Denmark',218:'Ecuador',818:'Egypt',231:'Ethiopia',
-  246:'Finland',250:'France',276:'Germany',288:'Ghana',300:'Greece',320:'Guatemala',
+  4:'Afghanistan',8:'Albania',12:'Algeria',20:'Andorra',24:'Angola',28:'Antigua & Barbuda',
+  32:'Argentina',36:'Australia',40:'Austria',31:'Azerbaijan',44:'Bahamas',48:'Bahrain',
+  50:'Bangladesh',52:'Barbados',112:'Belarus',56:'Belgium',84:'Belize',204:'Benin',
+  64:'Bhutan',68:'Bolivia',70:'Bosnia & Herz.',72:'Botswana',76:'Brazil',96:'Brunei',
+  100:'Bulgaria',854:'Burkina Faso',108:'Burundi',116:'Cambodia',120:'Cameroon',
+  124:'Canada',132:'Cape Verde',140:'Central African Rep.',148:'Chad',152:'Chile',
+  156:'China',170:'Colombia',174:'Comoros',178:'Congo',180:'DR Congo',
+  188:'Costa Rica',384:'Côte d\'Ivoire',191:'Croatia',192:'Cuba',196:'Cyprus',
+  203:'Czechia',208:'Denmark',262:'Djibouti',212:'Dominica',214:'Dominican Rep.',
+  218:'Ecuador',818:'Egypt',222:'El Salvador',226:'Eq. Guinea',232:'Eritrea',
+  233:'Estonia',231:'Ethiopia',238:'Falkland Islands',246:'Finland',250:'France',
+  266:'Gabon',270:'Gambia',268:'Georgia',276:'Germany',288:'Ghana',300:'Greece',
+  308:'Grenada',320:'Guatemala',324:'Guinea',624:'Guinea-Bissau',328:'Guyana',
   332:'Haiti',340:'Honduras',348:'Hungary',356:'India',360:'Indonesia',364:'Iran',
   368:'Iraq',372:'Ireland',376:'Israel',380:'Italy',388:'Jamaica',392:'Japan',
-  400:'Jordan',398:'Kazakhstan',404:'Kenya',408:'North Korea',410:'South Korea',
-  414:'Kuwait',418:'Laos',422:'Lebanon',430:'Liberia',434:'Libya',484:'Mexico',
-  504:'Morocco',508:'Mozambique',516:'Namibia',524:'Nepal',528:'Netherlands',
-  554:'New Zealand',566:'Nigeria',578:'Norway',586:'Pakistan',591:'Panama',
-  598:'Papua New Guinea',600:'Paraguay',604:'Peru',608:'Philippines',616:'Poland',
-  620:'Portugal',630:'Puerto Rico',634:'Qatar',642:'Romania',643:'Russia',
-  682:'Saudi Arabia',686:'Senegal',694:'Sierra Leone',706:'Somalia',710:'South Africa',
-  724:'Spain',144:'Sri Lanka',729:'Sudan',752:'Sweden',756:'Switzerland',
-  760:'Syria',764:'Thailand',792:'Turkey',800:'Uganda',804:'Ukraine',784:'UAE',
-  826:'United Kingdom',840:'United States',858:'Uruguay',860:'Uzbekistan',
+  400:'Jordan',398:'Kazakhstan',404:'Kenya',296:'Kiribati',408:'North Korea',
+  410:'South Korea',414:'Kuwait',417:'Kyrgyzstan',418:'Laos',422:'Lebanon',
+  426:'Lesotho',430:'Liberia',434:'Libya',438:'Liechtenstein',440:'Lithuania',
+  442:'Luxembourg',450:'Madagascar',454:'Malawi',458:'Malaysia',462:'Maldives',
+  466:'Mali',470:'Malta',584:'Marshall Islands',478:'Mauritania',480:'Mauritius',
+  484:'Mexico',583:'Micronesia',498:'Moldova',492:'Monaco',496:'Mongolia',
+  499:'Montenegro',504:'Morocco',508:'Mozambique',516:'Namibia',524:'Nepal',
+  528:'Netherlands',554:'New Zealand',558:'Nicaragua',562:'Niger',566:'Nigeria',
+  578:'Norway',512:'Oman',586:'Pakistan',585:'Palau',591:'Panama',598:'Papua New Guinea',
+  600:'Paraguay',604:'Peru',608:'Philippines',616:'Poland',620:'Portugal',634:'Qatar',
+  642:'Romania',643:'Russia',646:'Rwanda',659:'Saint Kitts & Nevis',662:'Saint Lucia',
+  670:'Saint Vincent',882:'Samoa',674:'San Marino',678:'São Tomé & Príncipe',
+  682:'Saudi Arabia',686:'Senegal',688:'Serbia',694:'Sierra Leone',703:'Slovakia',
+  705:'Slovenia',090:'Solomon Islands',706:'Somalia',710:'South Africa',
+  716:'South Sudan',724:'Spain',144:'Sri Lanka',729:'Sudan',740:'Suriname',
+  748:'Eswatini',752:'Sweden',756:'Switzerland',760:'Syria',158:'Taiwan',
+  762:'Tajikistan',764:'Thailand',626:'Timor-Leste',768:'Togo',776:'Tonga',
+  780:'Trinidad & Tobago',788:'Tunisia',792:'Turkey',795:'Turkmenistan',
+  798:'Tuvalu',800:'Uganda',804:'Ukraine',784:'UAE',826:'United Kingdom',
+  840:'United States',858:'Uruguay',860:'Uzbekistan',548:'Vanuatu',
   862:'Venezuela',704:'Vietnam',887:'Yemen',894:'Zambia',716:'Zimbabwe',
-  191:'Croatia',246:'Finland',528:'Netherlands',703:'Slovakia',705:'Slovenia',
-  499:'Montenegro',807:'North Macedonia',70:'Bosnia & Herz.',688:'Serbia',
-  208:'Denmark',372:'Ireland',
+  807:'North Macedonia',275:'Palestine',090:'Solomon Islands',
 };
 
 // Name aliases to match your DB country names to atlas IDs
@@ -2699,13 +2714,12 @@ Object.entries(ATLAS_NAMES).forEach(([id, name]) => { NAME_TO_ATLAS[name.toLower
 
 function buildVisitedIds() {
   const ids = new Set();
-  if (!countriesCache || !countryStats) return ids;
+  if (!countriesCache) return ids;
   countriesCache.forEach(c => {
-    const isVisited = c.visited || (countryStats[c.id] && (countryStats[c.id].hm > 0 || countryStats[c.id].pk > 0));
+    const cs = countryStats[c.id];
+    const isVisited = c.visited || (cs && (cs.hm > 0 || cs.pk > 0));
     if (!isVisited) return;
-    // First try map_id from DB
     if (c.map_id) { ids.add(String(c.map_id)); return; }
-    // Fallback: match by name
     const atlasId = NAME_TO_ATLAS[c.name?.toLowerCase()];
     if (atlasId) ids.add(String(atlasId));
   });
@@ -2722,16 +2736,9 @@ function loadWorldMap(visitedIds) {
     const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
     const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
 
-    // Calculate remaining height in .main after tabs + stat bar + legend
-    const mainEl = document.querySelector('.main');
-    const tabsEl = document.querySelector('.home-tabs');
-    const statsEl = document.querySelector('.map-stat-bar');
-    const legendH = 36;
-    const usedH = (tabsEl?.offsetHeight||48) + (statsEl?.offsetHeight||60) + legendH + 48;
-    const mainH = mainEl?.offsetHeight || window.innerHeight - 80;
+    // Use the container's actual rendered dimensions
     const width = container.offsetWidth || 600;
-    const maxByRatio = Math.round(width * 0.48);
-    const height = Math.min(mainH - usedH, maxByRatio, window.innerHeight - 240);
+    const height = container.offsetHeight || 300;
 
     container.innerHTML = '';
     const svg = d3.select(container).append('svg')
@@ -3087,7 +3094,7 @@ async function render() {
         <button class="home-tab" onclick="setHomeTab(this,'parkruns')">🏃 Parkruns</button>
       </div>
 
-      <div id="home-tab-content" style="display:flex;flex-direction:column;gap:12px;">
+      <div id="home-tab-content" style="display:flex;flex-direction:column;gap:10px;">
         <div class="map-stat-bar">
           <div class="map-stat-item">
             <div class="map-stat-val">${visitedCount}</div>
@@ -3109,17 +3116,17 @@ async function render() {
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">of the world</div>
           </div>
         </div>
-        <div id="world-map-container" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--card);">
+        <div id="world-map-container" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--card);height:calc(100vh - 320px);min-height:280px;">
           <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>
         </div>
-        <div style="display:flex;align-items:center;gap:16px;margin-top:10px;font-size:12px;color:var(--muted);">
+        <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--muted);">
           <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#2a78d6;display:inline-block;"></span>Visited</span>
           <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#e1e0d9;border:0.5px solid #c3c2b7;display:inline-block;"></span>Not visited</span>
         </div>
       </div>`;
 
-    // Load D3 map
-    loadWorldMap(visitedNumericIds);
+    // Load D3 map — always call buildVisitedIds() at render time
+    loadWorldMap(buildVisitedIds());
     return;
   }
 
