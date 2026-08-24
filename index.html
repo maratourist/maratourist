@@ -3116,6 +3116,7 @@ async function loadStatesMap(country) {
 
   const geoData = await fetch(geoUrl).then(r => r.json()).catch(() => null);
   if (!geoData) { container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">Map unavailable</div>'; return; }
+  console.log('[States] features:', geoData.features.length, 'first:', geoData.features[0]?.properties);
 
   // State code field differs by dataset
   const getCode = (f) => {
@@ -3150,9 +3151,8 @@ async function loadStatesMap(country) {
     .attr('viewBox', `0 0 ${width} ${height}`)
     .style('width','100%').style('height','100%').style('display','block');
 
-  const projection = country === 'AU'
-    ? d3.geoMercator().fitSize([width, height], geoData)
-    : d3.geoMercator().fitSize([width, height], geoData);
+  const padding = 20;
+  const projection = d3.geoMercator().fitExtent([[padding, padding], [width - padding, height - padding]], geoData);
 
   const path = d3.geoPath(projection);
   const g = svg.append('g');
