@@ -2784,26 +2784,6 @@ function loadWorldMap() {
       .translate([width / 2, height / 2]);
     const path = d3.geoPath(projection);
 
-    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-    const fillVisited = '#2a78d6';
-    const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
-    const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
-
-    const width = container.offsetWidth || 600;
-    const height = container.offsetHeight || 300;
-
-    container.innerHTML = '';
-    const svg = d3.select(container).append('svg')
-      .attr('viewBox', `0 0 ${width} ${height}`)
-      .style('width', '100%')
-      .style('height', '100%')
-      .style('display', 'block');
-
-    const projection = d3.geoNaturalEarth1()
-      .scale(Math.min(width / 6.2, height / 3.5))
-      .translate([width / 2, height / 2]);
-    const path = d3.geoPath(projection);
-
     let tip = document.getElementById('map-tooltip');
     if (!tip) {
       tip = document.createElement('div');
