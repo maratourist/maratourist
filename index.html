@@ -1757,12 +1757,7 @@ async function loadAllStats() {
     }
 
     statsLoaded = true;
-    // Re-render map with correct visited IDs now that countryStats is ready
-    const mapContainer = document.getElementById('world-map-container');
-    if (mapContainer && window.d3 && window.topojson) {
-      mapContainer.innerHTML = '';
-      loadWorldMap(buildVisitedIds());
-    }
+    // Map doesn't need re-render - it queries Supabase directly
   })();
 
   await statsLoadingPromise;
@@ -2732,17 +2727,36 @@ function buildVisitedIds() {
   return ids;
 }
 
-function loadWorldMap(visitedIds) {
+function loadWorldMap() {
   const container = document.getElementById('world-map-container');
   if (!container) return;
 
-  function renderMap() {
-    const isDark = document.documentElement.dataset.mode === 'dark' || matchMedia('(prefers-color-scheme: dark)').matches;
+  async function renderMap() {
+    // Query visited countries directly - simple and reliable
+    const visitedIds = new Set();
+    const [{ data: hmResults }, { data: pkResults }] = await Promise.all([
+      sb.from('half_marathon_results').select('race_id, half_marathon_races(city_id, cities(country_id, countries(name, map_id)))'),
+      sb.from('parkrun_results').select('location_id, parkrun_locations(city_id, cities(country_id, countries(name, map_id)))')
+    ]);
+
+    (hmResults || []).forEach(r => {
+      const country = r.half_marathon_races?.cities?.countries;
+      if (country?.map_id) visitedIds.add(String(country.map_id));
+      else if (country?.name) { const id = NAME_TO_ATLAS[country.name.toLowerCase()]; if (id) visitedIds.add(String(id)); }
+    });
+    (pkResults || []).forEach(r => {
+      const country = r.parkrun_locations?.cities?.countries;
+      if (country?.map_id) visitedIds.add(String(country.map_id));
+      else if (country?.name) { const id = NAME_TO_ATLAS[country.name.toLowerCase()]; if (id) visitedIds.add(String(id)); }
+    });
+
+    console.log('[Map] visited countries:', [...visitedIds]);
+
+    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
     const fillVisited = '#2a78d6';
     const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
     const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
 
-    // Use the container's actual rendered dimensions
     const width = container.offsetWidth || 600;
     const height = container.offsetHeight || 300;
 
@@ -2754,11 +2768,10 @@ function loadWorldMap(visitedIds) {
       .style('display', 'block');
 
     const projection = d3.geoNaturalEarth1()
-      .scale(width / 5.8)
+      .scale(Math.min(width / 7.5, height / 4.2))
       .translate([width / 2, height / 2]);
     const path = d3.geoPath(projection);
 
-    // Tooltip
     let tip = document.getElementById('map-tooltip');
     if (!tip) {
       tip = document.createElement('div');
@@ -2776,9 +2789,8 @@ function loadWorldMap(visitedIds) {
         .attr('fill', d => visitedIds.has(String(d.id)) ? fillVisited : fillDefault)
         .attr('stroke', strokeColor)
         .attr('stroke-width', 0.5)
-        .attr('cursor', 'pointer')
         .on('mousemove', function(event, d) {
-          const name = ATLAS_NAMES[d.id] || ('ID: ' + d.id);
+          const name = ATLAS_NAMES[d.id] || ATLAS_NAMES[Number(d.id)] || '—';
           const isVisited = visitedIds.has(String(d.id));
           tip.innerHTML = name + (isVisited ? ' <span style="color:#2a78d6;margin-left:4px;">✓</span>' : '');
           tip.style.opacity = '1';
@@ -2798,7 +2810,7 @@ function loadWorldMap(visitedIds) {
   if (window.d3 && window.topojson) {
     renderMap();
   } else {
-    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>';
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>';
     const s1 = document.createElement('script');
     s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
     s1.onload = () => {
@@ -3132,8 +3144,8 @@ async function render() {
         </div>
       </div>`;
 
-    // Load D3 map — always call buildVisitedIds() at render time
-    loadWorldMap(buildVisitedIds());
+    // Load D3 map
+    loadWorldMap();
     return;
   }
 
