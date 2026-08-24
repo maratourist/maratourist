@@ -3111,7 +3111,7 @@ async function loadStatesMap(country) {
 
   // GeoJSON sources
   const geoUrl = country === 'AU'
-    ? 'https://raw.githubusercontent.com/rowanhogan/australian-states/master/states.min.geojson'
+    ? 'https://raw.githubusercontent.com/tonywr71/GeoJson-Data/master/australian-states.min.geojson'
     : 'https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson';
 
   const geoData = await fetch(geoUrl).then(r => r.json()).catch(() => null);
