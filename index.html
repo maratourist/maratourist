@@ -2378,13 +2378,14 @@ function renderCitiesGrid(allCities) {
   Object.entries(grouped).forEach(([cname, states]) => {
     const flag = cities.find(c => c.countries?.name === cname)?.countries?.flag_emoji || '';
     html += `<div style="margin-bottom:24px;">`;
-    html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);margin-bottom:12px;">${flag} ${cname}</div>`;
+    html += `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);margin-bottom:12px;">${flag} ${cname}</div>`;
 
-    // Sort states by number of visited cities desc
+    // Sort states: most visited first, then by total city count desc
     const sortedStates = Object.entries(states).sort((a, b) => {
       const visA = a[1].filter(c => { const cs = cityStats[c.id]; return cs && (cs.hm > 0 || cs.pk > 0); }).length;
       const visB = b[1].filter(c => { const cs = cityStats[c.id]; return cs && (cs.hm > 0 || cs.pk > 0); }).length;
-      return visB - visA || a[0].localeCompare(b[0]);
+      if (visB !== visA) return visB - visA;
+      return b[1].length - a[1].length;
     });
 
     sortedStates.forEach(([state, stateCities]) => {
@@ -2394,9 +2395,9 @@ function renderCitiesGrid(allCities) {
       stateCities.sort((a, b) => (b.population || 0) - (a.population || 0));
 
       html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow);">`;
-      html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">`;
-      html += `<span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text);">${state}</span>`;
-      html += `<span style="font-size:11px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:99px;border:1px solid var(--border);">${stateCities.length} cities · ${visitedCount} visited</span>`;
+      html += `<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">`;
+      html += `<span style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--text);">${state}</span>`;
+      html += `<span style="font-size:12px;color:var(--muted);background:var(--bg);padding:3px 10px;border-radius:99px;border:1px solid var(--border);">${stateCities.length} cities · ${visitedCount} visited</span>`;
       html += `</div>`;
       html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,140px);gap:8px;">`;
 
