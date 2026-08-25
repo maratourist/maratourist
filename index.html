@@ -1433,7 +1433,6 @@
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
       <button onclick="goGlobalHalfMarathons()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--run)';this.style.color='var(--run)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏅 All Half Marathons</button>
       <button onclick="goGlobalParkruns()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--parkrun)';this.style.color='var(--parkrun)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏃 All Parkruns</button>
-      <button onclick="goGlobalCities()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏙️ All Cities</button>
     </div>
     <div id="sidebar-regions" style="display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px;">Regions</div>
@@ -2312,10 +2311,101 @@ async function renderAllCities() {
   await loadAllStats();
 
   const { data: allCities } = await sb.from('cities')
-    .select('*, countries(id, name, flag_emoji)')
+    .select('id, name, state, population, country_id, countries(id, name, flag_emoji)')
     .order('name');
 
-  const cities = (allCities || []).filter(c => c.cover_photo && c.description);
+  // Cities with at least 1 HM or parkrun done
+  const cities = (allCities || []).filter(c => {
+    const cs = cityStats[c.id];
+    return cs && (cs.hm > 0 || cs.pk > 0);
+  });
+
+  if (cities.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="es-icon">🏙️</div><div class="es-text">No cities with activities yet.</div></div>';
+    return;
+  }
+
+  window._allCitiesData = cities;
+
+  const countryOpts = [...new Set(cities.map(c => c.countries?.name).filter(Boolean))].sort()
+    .map(n => `<option value="${n}">${n}</option>`).join('');
+
+  container.innerHTML = `
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <input type="text" id="city-search" placeholder="🔍 Search cities..."
+        oninput="filterAllCities()"
+        style="flex:1;min-width:180px;padding:10px 14px;font-size:14px;border:1.5px solid var(--border);
+        border-radius:10px;background:var(--card);color:var(--text);outline:none;"
+        onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
+      <select id="city-country-filter" onchange="filterAllCities()"
+        style="padding:10px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);">
+        <option value="">All Countries</option>${countryOpts}
+      </select>
+      <select id="city-sort" onchange="filterAllCities()"
+        style="padding:10px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);">
+        <option value="pop">Sort: Population</option>
+        <option value="name">Sort: Name</option>
+        <option value="pk">Sort: Parkruns</option>
+        <option value="hm">Sort: Half Marathons</option>
+      </select>
+    </div>
+    <div id="cities-grid"></div>`;
+
+  renderCitiesGrid(cities);
+}
+
+function filterAllCities() {
+  const q       = (document.getElementById('city-search')?.value || '').toLowerCase().trim();
+  const country = document.getElementById('city-country-filter')?.value || '';
+  const sort    = document.getElementById('city-sort')?.value || 'pop';
+  let filtered  = [...(window._allCitiesData || [])];
+  if (q) filtered = filtered.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    (c.state || '').toLowerCase().includes(q) ||
+    (c.countries?.name || '').toLowerCase().includes(q));
+  if (country) filtered = filtered.filter(c => (c.countries?.name || '') === country);
+  filtered.sort((a, b) => {
+    const ca = cityStats[a.id] || {}, cb = cityStats[b.id] || {};
+    if (sort === 'name') return a.name.localeCompare(b.name);
+    if (sort === 'pk')   return (cb.pk||0) - (ca.pk||0);
+    if (sort === 'hm')   return (cb.hm||0) - (ca.hm||0);
+    return (b.population||0) - (a.population||0); // pop
+  });
+  renderCitiesGrid(filtered);
+}
+
+function renderCitiesGrid(cities) {
+  const grid = document.getElementById('cities-grid');
+  if (!grid) return;
+  if (cities.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="es-icon">🔍</div><div class="es-text">No cities match.</div></div>';
+    return;
+  }
+
+  const html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+    ${cities.map(city => {
+      const cs  = cityStats[city.id] || { hm:0, hmTotal:0, pk:0, pkTotal:0 };
+      const pop = city.population ? city.population.toLocaleString() : '—';
+      const flag = city.countries?.flag_emoji || '';
+      const countryId = city.countries?.id;
+      return `<div onclick="navigateToCity(${countryId}, ${city.id})"
+        style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;
+        box-shadow:var(--shadow);cursor:pointer;transition:all 0.15s;"
+        onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='var(--blue)'"
+        onmouseout="this.style.transform='';this.style.borderColor='var(--border)'">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${flag} ${city.countries?.name || ''}${city.state ? ' · ' + city.state : ''}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:8px;">${city.name}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--muted);margin-bottom:10px;">👥 ${pop}</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          ${cs.hmTotal > 0 ? `<span class="tag tag-run" style="align-self:flex-start;font-size:11px;">🏅 ${cs.hm}/${cs.hmTotal} Half Marathons</span>` : ''}
+          ${cs.pkTotal > 0 ? `<span class="tag tag-park" style="align-self:flex-start;font-size:11px;">🏃 ${cs.pk}/${cs.pkTotal} Parkruns</span>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  grid.innerHTML = html;
+}
 
   if (cities.length === 0) {
     container.innerHTML = '<div class="empty-state"><div class="es-icon">🏙️</div><div class="es-text">No cities ready yet.<br>Add a cover photo and description to a city to see it here.</div></div>';
@@ -3029,6 +3119,10 @@ function setHomeTab(btn, tab) {
         <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#e1e0d9;border:0.5px solid #c3c2b7;display:inline-block;"></span>Not visited</span>
       </div>`;
     loadWorldMap();
+
+  } else if (tab === 'cities') {
+    content.innerHTML = `<div id="cities-container"></div>`;
+    renderAllCities();
 
   } else if (tab === 'states') {
     content.innerHTML = `
