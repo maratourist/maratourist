@@ -2314,95 +2314,112 @@ async function renderAllCities() {
     .select('id, name, state, population, country_id, countries(id, name, flag_emoji)')
     .order('name');
 
-  // Cities with at least 1 HM or parkrun done
-  const cities = (allCities || []).filter(c => {
-    const cs = cityStats[c.id];
-    return cs && (cs.hm > 0 || cs.pk > 0);
-  });
-
-  if (cities.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="es-icon">🏙️</div><div class="es-text">No cities with activities yet.</div></div>';
+  if (!allCities?.length) {
+    container.innerHTML = '<div class="empty-state"><div class="es-icon">🏙️</div><div class="es-text">No cities yet.</div></div>';
     return;
   }
 
-  window._allCitiesData = cities;
+  window._allCitiesData = allCities;
 
-  const countryOpts = [...new Set(cities.map(c => c.countries?.name).filter(Boolean))].sort()
+  const countryOpts = [...new Set(allCities.map(c => c.countries?.name).filter(Boolean))].sort()
     .map(n => `<option value="${n}">${n}</option>`).join('');
 
   container.innerHTML = `
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
       <input type="text" id="city-search" placeholder="🔍 Search cities..."
-        oninput="filterAllCities()"
+        oninput="renderCitiesGrid(window._allCitiesData)"
         style="flex:1;min-width:180px;padding:10px 14px;font-size:14px;border:1.5px solid var(--border);
         border-radius:10px;background:var(--card);color:var(--text);outline:none;"
         onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
-      <select id="city-country-filter" onchange="filterAllCities()"
+      <select id="city-country-filter" onchange="renderCitiesGrid(window._allCitiesData)"
         style="padding:10px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);">
         <option value="">All Countries</option>${countryOpts}
-      </select>
-      <select id="city-sort" onchange="filterAllCities()"
-        style="padding:10px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);">
-        <option value="pop">Sort: Population</option>
-        <option value="name">Sort: Name</option>
-        <option value="pk">Sort: Parkruns</option>
-        <option value="hm">Sort: Half Marathons</option>
       </select>
     </div>
     <div id="cities-grid"></div>`;
 
-  renderCitiesGrid(cities);
+  renderCitiesGrid(allCities);
 }
 
 function filterAllCities() {
+  renderCitiesGrid(window._allCitiesData || []);
+}
+
+function renderCitiesGrid(allCities) {
+  const grid = document.getElementById('cities-grid');
+  if (!grid) return;
+
   const q       = (document.getElementById('city-search')?.value || '').toLowerCase().trim();
   const country = document.getElementById('city-country-filter')?.value || '';
-  const sort    = document.getElementById('city-sort')?.value || 'pop';
-  let filtered  = [...(window._allCitiesData || [])];
-  if (q) filtered = filtered.filter(c =>
+
+  let cities = [...allCities];
+  if (q) cities = cities.filter(c =>
     c.name.toLowerCase().includes(q) ||
     (c.state || '').toLowerCase().includes(q) ||
     (c.countries?.name || '').toLowerCase().includes(q));
-  if (country) filtered = filtered.filter(c => (c.countries?.name || '') === country);
-  filtered.sort((a, b) => {
-    const ca = cityStats[a.id] || {}, cb = cityStats[b.id] || {};
-    if (sort === 'name') return a.name.localeCompare(b.name);
-    if (sort === 'pk')   return (cb.pk||0) - (ca.pk||0);
-    if (sort === 'hm')   return (cb.hm||0) - (ca.hm||0);
-    return (b.population||0) - (a.population||0); // pop
-  });
-  renderCitiesGrid(filtered);
-}
+  if (country) cities = cities.filter(c => (c.countries?.name || '') === country);
 
-function renderCitiesGrid(cities) {
-  const grid = document.getElementById('cities-grid');
-  if (!grid) return;
   if (cities.length === 0) {
     grid.innerHTML = '<div class="empty-state"><div class="es-icon">🔍</div><div class="es-text">No cities match.</div></div>';
     return;
   }
 
-  const html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
-    ${cities.map(city => {
-      const cs  = cityStats[city.id] || { hm:0, hmTotal:0, pk:0, pkTotal:0 };
-      const pop = city.population ? city.population.toLocaleString() : '—';
-      const flag = city.countries?.flag_emoji || '';
-      const countryId = city.countries?.id;
-      return `<div onclick="navigateToCity(${countryId}, ${city.id})"
-        style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;
-        box-shadow:var(--shadow);cursor:pointer;transition:all 0.15s;"
-        onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='var(--blue)'"
-        onmouseout="this.style.transform='';this.style.borderColor='var(--border)'">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${flag} ${city.countries?.name || ''}${city.state ? ' · ' + city.state : ''}</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:8px;">${city.name}</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--muted);margin-bottom:10px;">👥 ${pop}</div>
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          ${cs.hmTotal > 0 ? `<span class="tag tag-run" style="align-self:flex-start;font-size:11px;">🏅 ${cs.hm}/${cs.hmTotal} Half Marathons</span>` : ''}
-          ${cs.pkTotal > 0 ? `<span class="tag tag-park" style="align-self:flex-start;font-size:11px;">🏃 ${cs.pk}/${cs.pkTotal} Parkruns</span>` : ''}
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
+  // Group by country then state
+  const grouped = {};
+  cities.forEach(c => {
+    const cname = c.countries?.name || 'Other';
+    const state = c.state || '—';
+    if (!grouped[cname]) grouped[cname] = {};
+    if (!grouped[cname][state]) grouped[cname][state] = [];
+    grouped[cname][state].push(c);
+  });
+
+  // Sort states within each country — visited first
+  const visitedFirst = (arr) => {
+    return arr.sort((a, b) => {
+      const va = cityStats[a.id], vb = cityStats[b.id];
+      const da = va && (va.hm > 0 || va.pk > 0) ? 1 : 0;
+      const db = vb && (vb.hm > 0 || vb.pk > 0) ? 1 : 0;
+      return db - da || a.name.localeCompare(b.name);
+    });
+  };
+
+  let html = '';
+  Object.entries(grouped).forEach(([cname, states]) => {
+    const flag = cities.find(c => c.countries?.name === cname)?.countries?.flag_emoji || '';
+    html += `<div style="margin-bottom:24px;">`;
+    html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);margin-bottom:12px;">${flag} ${cname}</div>`;
+
+    Object.entries(states).sort().forEach(([state, stateCities]) => {
+      const visitedCount = stateCities.filter(c => { const cs = cityStats[c.id]; return cs && (cs.hm > 0 || cs.pk > 0); }).length;
+      html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow);">`;
+      html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">`;
+      html += `<span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text);">${state}</span>`;
+      html += `<span style="font-size:11px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:99px;border:1px solid var(--border);">${stateCities.length} cities · ${visitedCount} visited</span>`;
+      html += `</div>`;
+      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,140px);gap:8px;">`;
+
+      visitedFirst(stateCities).forEach(city => {
+        const cs = cityStats[city.id];
+        const visited = cs && (cs.hm > 0 || cs.pk > 0);
+        const countryId = city.countries?.id;
+        html += `<span onclick="navigateToCity(${countryId},${city.id})"
+          style="display:inline-flex;align-items:center;justify-content:center;width:140px;padding:6px 10px;
+          border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;
+          background:${visited ? '#16a34a' : 'var(--card)'};
+          color:${visited ? '#fff' : 'var(--muted)'};
+          border:1.5px solid ${visited ? '#16a34a' : 'var(--border)'};"
+          onmouseover="this.style.borderColor='${visited ? '#15803d' : '#16a34a'}';this.style.background='${visited ? '#15803d' : 'var(--card)'}';${visited ? '' : "this.style.color='#16a34a';"}"
+          onmouseout="this.style.borderColor='${visited ? '#16a34a' : 'var(--border)'}';this.style.background='${visited ? '#16a34a' : 'var(--card)'}';${visited ? '' : "this.style.color='var(--muted)';"}"
+          >${city.name}</span>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    html += `</div>`;
+  });
 
   grid.innerHTML = html;
 }
@@ -2768,7 +2785,7 @@ function loadWorldMap() {
     }
 
     const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-    const fillVisited = '#2a78d6';
+    const fillVisited = '#16a34a';
     const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
     const strokeColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.8)';
     const width = container.offsetWidth || 600;
@@ -2839,7 +2856,7 @@ function loadWorldMap() {
           const iso2 = FLAG_CODES[d.id] || '';
           const flag = iso2 ? `<img src="https://flagcdn.com/20x15/${iso2.toLowerCase()}.png" style="border-radius:2px;flex-shrink:0;">` : '';
           const isVisited = visitedIds.has(d.id);
-          tip.innerHTML = flag + name + (isVisited ? '<span style="color:#2a78d6;margin-left:6px;">✓</span>' : '');
+          tip.innerHTML = flag + name + (isVisited ? '<span style="color:#16a34a;margin-left:6px;">✓</span>' : '');
           tip.style.opacity = '1';
           tip.style.left = (event.clientX + 14) + 'px';
           tip.style.top = (event.clientY - 36) + 'px';
@@ -3022,7 +3039,7 @@ function setHomeTab(btn, tab) {
         <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>
       </div>
       <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--muted);">
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#2a78d6;display:inline-block;"></span>Visited</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#16a34a;display:inline-block;"></span>Visited</span>
         <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#e1e0d9;border:0.5px solid #c3c2b7;display:inline-block;"></span>Not visited</span>
       </div>`;
     loadWorldMap();
@@ -3041,7 +3058,7 @@ function setHomeTab(btn, tab) {
         <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>
       </div>
       <div style="display:flex;align-items:center;gap:16px;margin-top:8px;font-size:12px;color:var(--muted);">
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#2a78d6;display:inline-block;"></span>Half Marathon done</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#16a34a;display:inline-block;"></span>Half Marathon done</span>
         <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#e1e0d9;border:0.5px solid #c3c2b7;display:inline-block;"></span>Not yet</span>
       </div>`;
     loadStatesMap('AU');
@@ -3159,7 +3176,7 @@ async function loadStatesMap(country) {
   };
 
   const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-  const fillDone    = '#2a78d6';
+  const fillDone    = '#16a34a';
   const fillDefault = isDark ? '#2c2c2a' : '#e8e7e0';
   const strokeColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.9)';
 
@@ -3214,7 +3231,7 @@ async function loadStatesMap(country) {
     .on('mousemove', function(event, d) {
       const name = getStateName(d);
       const done = isDone(d);
-      tip.innerHTML = name + (done ? ' <span style="color:#2a78d6;margin-left:6px;">✓</span>' : '');
+      tip.innerHTML = name + (done ? ' <span style="color:#16a34a;margin-left:6px;">✓</span>' : '');
       tip.style.opacity = '1';
       tip.style.left = (event.clientX + 14) + 'px';
       tip.style.top  = (event.clientY - 36) + 'px';
@@ -3285,7 +3302,7 @@ async function loadStatesMap(country) {
           .attr('dominant-baseline', 'central')
           .attr('font-size', '11px').attr('font-weight', '700')
           .attr('font-family', 'system-ui, sans-serif')
-          .attr('fill', isDone(actFeature) ? '#2a78d6' : (isDark ? '#aaa' : '#555'))
+          .attr('fill', isDone(actFeature) ? '#16a34a' : (isDark ? '#aaa' : '#555'))
           .attr('pointer-events', 'none')
           .text('ACT');
       }
@@ -3661,7 +3678,7 @@ async function render() {
           <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>
         </div>
         <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--muted);">
-          <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#2a78d6;display:inline-block;"></span>Visited</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#16a34a;display:inline-block;"></span>Visited</span>
           <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#e1e0d9;border:0.5px solid #c3c2b7;display:inline-block;"></span>Not visited</span>
         </div>
       </div>`;
