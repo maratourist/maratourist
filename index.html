@@ -2322,7 +2322,7 @@ async function renderAllCities() {
   window._allCitiesData = allCities;
 
   const countryOpts = [...new Set(allCities.map(c => c.countries?.name).filter(Boolean))].sort()
-    .map(n => `<option value="${n}">${n}</option>`).join('');
+    .map(n => `<option value="${n}" ${n === 'Australia' ? 'selected' : ''}>${n}</option>`).join('');
 
   container.innerHTML = `
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
@@ -2374,24 +2374,25 @@ function renderCitiesGrid(allCities) {
     grouped[cname][state].push(c);
   });
 
-  // Sort states within each country — visited first
-  const visitedFirst = (arr) => {
-    return arr.sort((a, b) => {
-      const va = cityStats[a.id], vb = cityStats[b.id];
-      const da = va && (va.hm > 0 || va.pk > 0) ? 1 : 0;
-      const db = vb && (vb.hm > 0 || vb.pk > 0) ? 1 : 0;
-      return db - da || a.name.localeCompare(b.name);
-    });
-  };
-
   let html = '';
   Object.entries(grouped).forEach(([cname, states]) => {
     const flag = cities.find(c => c.countries?.name === cname)?.countries?.flag_emoji || '';
     html += `<div style="margin-bottom:24px;">`;
     html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);margin-bottom:12px;">${flag} ${cname}</div>`;
 
-    Object.entries(states).sort().forEach(([state, stateCities]) => {
+    // Sort states by number of visited cities desc
+    const sortedStates = Object.entries(states).sort((a, b) => {
+      const visA = a[1].filter(c => { const cs = cityStats[c.id]; return cs && (cs.hm > 0 || cs.pk > 0); }).length;
+      const visB = b[1].filter(c => { const cs = cityStats[c.id]; return cs && (cs.hm > 0 || cs.pk > 0); }).length;
+      return visB - visA || a[0].localeCompare(b[0]);
+    });
+
+    sortedStates.forEach(([state, stateCities]) => {
       const visitedCount = stateCities.filter(c => { const cs = cityStats[c.id]; return cs && (cs.hm > 0 || cs.pk > 0); }).length;
+
+      // Sort cities by population desc
+      stateCities.sort((a, b) => (b.population || 0) - (a.population || 0));
+
       html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow);">`;
       html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">`;
       html += `<span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text);">${state}</span>`;
@@ -2399,20 +2400,23 @@ function renderCitiesGrid(allCities) {
       html += `</div>`;
       html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,140px);gap:8px;">`;
 
-      visitedFirst(stateCities).forEach(city => {
+      stateCities.forEach(city => {
         const cs = cityStats[city.id];
         const visited = cs && (cs.hm > 0 || cs.pk > 0);
+        const pop = city.population ? 'Pop. ' + city.population.toLocaleString() : '';
         const countryId = city.countries?.id;
-        html += `<span onclick="navigateToCity(${countryId},${city.id})"
-          style="display:inline-flex;align-items:center;justify-content:center;width:140px;padding:6px 10px;
-          border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;
-          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;
-          background:${visited ? '#16a34a' : 'var(--card)'};
-          color:${visited ? '#fff' : 'var(--muted)'};
-          border:1.5px solid ${visited ? '#16a34a' : 'var(--border)'};"
-          onmouseover="this.style.borderColor='${visited ? '#15803d' : '#16a34a'}';this.style.background='${visited ? '#15803d' : 'var(--card)'}';${visited ? '' : "this.style.color='#16a34a';"}"
-          onmouseout="this.style.borderColor='${visited ? '#16a34a' : 'var(--border)'}';this.style.background='${visited ? '#16a34a' : 'var(--card)'}';${visited ? '' : "this.style.color='var(--muted)';"}"
-          >${city.name}</span>`;
+        const bg    = visited ? '#16a34a' : 'var(--card)';
+        const color = visited ? '#fff' : 'var(--muted)';
+        const border = visited ? '#16a34a' : 'var(--border)';
+        html += `<div onclick="navigateToCity(${countryId},${city.id})"
+          style="width:140px;padding:7px 10px;border-radius:12px;font-size:12px;font-weight:600;
+          cursor:pointer;transition:all 0.15s;text-align:center;
+          background:${bg};color:${color};border:1.5px solid ${border};"
+          onmouseover="this.style.background='${visited ? '#15803d' : 'var(--card)'}';this.style.borderColor='${visited ? '#15803d' : '#16a34a'}';${visited ? '' : "this.style.color='#16a34a';"}"
+          onmouseout="this.style.background='${bg}';this.style.borderColor='${border}';this.style.color='${color}';">
+          <div style="font-size:12px;font-weight:700;line-height:1.2;">${city.name}</div>
+          ${pop ? `<div style="font-size:10px;font-weight:500;opacity:0.75;margin-top:2px;">${pop}</div>` : ''}
+        </div>`;
       });
 
       html += `</div></div>`;
