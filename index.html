@@ -2407,22 +2407,6 @@ function renderCitiesGrid(cities) {
   grid.innerHTML = html;
 }
 
-  if (cities.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="es-icon">🏙️</div><div class="es-text">No cities ready yet.<br>Add a cover photo and description to a city to see it here.</div></div>';
-    return;
-  }
-
-  // Sort by total items (hm+pk+tourism done) desc
-  cities.sort((a, b) => {
-    const ca = cityStats[a.id] || {}, cb = cityStats[b.id] || {};
-    const scoreA = (ca.hm||0) + (ca.pk||0) + (ca.tourism||0) + (ca.hmTotal||0) + (ca.pkTotal||0) + (ca.tourismTotal||0);
-    const scoreB = (cb.hm||0) + (cb.pk||0) + (cb.tourism||0) + (cb.hmTotal||0) + (cb.pkTotal||0) + (cb.tourismTotal||0);
-    return scoreB - scoreA;
-  });
-
-  window._allCitiesData = cities;
-
-
 async function navigateToCity(countryId, cityId) {
   // Set state to go directly to city
   await loadRegionsAndCountries();
