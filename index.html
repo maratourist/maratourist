@@ -1422,9 +1422,12 @@
     </div>
     <div class="pr-item">
       <div class="pr-dist">Half Marathon</div>
-      <div class="pr-time">2:01:54</div>
-      <div class="pr-meta">5:47/km · 2025</div>
-      <div class="pr-location">Wondai Half Marathon</div>
+      <div class="pr-time">2:01:24</div>
+      <div class="pr-meta">5:45/km · 2026</div>
+      <div class="pr-location">Coffs Harbour Half Marathon</div>
+    </div>
+    <div style="padding-top:14px;margin-top:6px;border-top:1px solid var(--border);">
+      <button onclick="openHollyModal()" style="width:100%;padding:9px 10px;border-radius:8px;border:1.5px solid #f472b6;background:none;cursor:pointer;font-size:11px;font-weight:700;color:#f472b6;transition:all 0.15s;text-align:center;" onmouseover="this.style.background='#fdf2f8'" onmouseout="this.style.background='none'">🌸 Holly's Progression</button>
     </div>
   </div>
   <div class="main" id="main"></div>
@@ -2531,7 +2534,7 @@ const PR_DATA = {
     { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', year: 2026, event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
     { dist: '5 km',          time: '23:53',   pace: '4:46/km', year: 2026, event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
     { dist: '10 km',         time: '49:57',   pace: '4:59/km', year: 2026, event: 'Jetty to Jetty',                    city: 'Brisbane, AU' },
-    { dist: 'Half Marathon', time: '2:01:54', pace: '5:47/km', year: 2025, event: 'Wondai Half Marathon',              city: 'Wondai, AU' },
+    { dist: 'Half Marathon', time: '2:01:24', pace: '5:45/km', year: 2026, event: 'Coffs Harbour Half Marathon', city: 'Coffs Harbour, AU' },
   ],
   seasonBests: {
     2026: [
@@ -2539,7 +2542,7 @@ const PR_DATA = {
       { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
       { dist: '5 km',          time: '23:53',   pace: '4:46/km', event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
       { dist: '10 km',         time: '49:57',   pace: '4:59/km', event: 'Jetty to Jetty',                    city: 'Brisbane, AU' },
-      { dist: 'Half Marathon', time: '2:02:17', pace: '5:48/km', event: 'Hervey Bay Half Marathon',          city: 'Hervey Bay, AU' },
+      { dist: 'Half Marathon', time: '2:01:24', pace: '5:45/km', event: 'Coffs Harbour Half Marathon',       city: 'Coffs Harbour, AU' },
     ],
     2025: [
       { dist: '1 km',          time: '4:44',    pace: '4:44/km', event: 'Redcliffe Parkrun',                  city: 'Redcliffe, AU' },
@@ -3393,6 +3396,76 @@ async function loadPKMap() {
       .addTo(map)
       .bindPopup(popupHTML, { maxWidth: 320 });
   });
+}
+
+function openHollyModal() {
+  const HOLLY = {
+    '2km': [
+      { date: '26/04/2026', age: 5, time: '14:45', event: 'Des Connor Park Juniors Parkrun', city: 'Ashgrove, Brisbane QLD' },
+      { date: '24/05/2026', age: 5, time: '13:37', event: 'Des Connor Park Juniors Parkrun', city: 'Ashgrove, Brisbane QLD' },
+      { date: '31/05/2026', age: 5, time: '12:48', event: 'Des Connor Park Juniors Parkrun', city: 'Ashgrove, Brisbane QLD', pb: true },
+    ],
+    '5km': [
+      { date: '28/12/2024', age: 4, time: '47:08', event: 'S. S. Koopa Trail Parkrun',       city: 'Bribie Island QLD' },
+      { date: '19/07/2025', age: 4, time: '45:40', event: 'Mitchelton Parkrun',               city: 'Brisbane QLD' },
+      { date: '13/09/2025', age: 5, time: '40:42', event: 'Capestone Lake Parkrun',           city: 'Brisbane QLD' },
+      { date: '28/02/2026', age: 5, time: '38:48', event: 'Kingscliff Parkrun',               city: 'Kingscliff NSW' },
+      { date: '18/07/2026', age: 5, time: '36:28', event: 'North Harbour Parkrun',            city: 'Brisbane QLD' },
+      { date: '29/08/2026', age: 6, time: '33:12', event: 'Coffs Harbour Parkrun',            city: 'Coffs Harbour NSW', pb: true },
+    ],
+  };
+
+  const renderTable = (rows) => rows.map((r, i) => {
+    const prev = rows[i - 1];
+    const improved = prev ? (() => {
+      const [pm, ps] = prev.time.split(':').map(Number);
+      const [cm, cs] = r.time.split(':').map(Number);
+      const diff = (pm * 60 + ps) - (cm * 60 + cs);
+      return diff > 0 ? `<span style="color:#16a34a;font-size:10px;margin-left:4px;">-${Math.floor(diff/60)}:${String(diff%60).padStart(2,'0')}</span>` : '';
+    })() : '';
+    return `<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:9px 12px;font-family:monospace;font-size:12px;color:var(--muted);">${r.date}</td>
+      <td style="padding:9px 12px;text-align:center;font-size:12px;color:var(--muted);">${r.age}y</td>
+      <td style="padding:9px 12px;text-align:center;">
+        <span style="font-family:monospace;font-size:14px;font-weight:700;color:${r.pb ? '#f472b6' : 'var(--text)'};">${r.time}</span>
+        ${r.pb ? '<span style="font-size:10px;background:#fdf2f8;color:#f472b6;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700;">PB</span>' : improved}
+      </td>
+      <td style="padding:9px 12px;font-size:11px;color:var(--muted);">${r.event}</td>
+      <td style="padding:9px 12px;font-size:11px;color:var(--muted);">${r.city}</td>
+    </tr>`;
+  }).join('');
+
+  const thead = `<thead><tr style="border-bottom:2px solid var(--border);background:var(--bg);">
+    <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:left;">Date</th>
+    <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:center;">Age</th>
+    <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:center;">Time</th>
+    <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:left;">Event</th>
+    <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:left;">City</th>
+  </tr></thead>`;
+
+  showModal(`
+    <div class="modal-header" style="border-bottom:2px solid #fce7f3;">
+      <div class="modal-title" style="color:#db2777;">🌸 Holly's Running Progression</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:#db2777;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #fce7f3;">🏃 2 km — Des Connor Park Juniors</div>
+        <table style="width:100%;border-collapse:collapse;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);">
+          ${thead}<tbody>${renderTable(HOLLY['2km'])}</tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#db2777;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #fce7f3;">🏅 5 km — Parkruns</div>
+        <table style="width:100%;border-collapse:collapse;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);">
+          ${thead}<tbody>${renderTable(HOLLY['5km'])}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Close</button>
+    </div>
+  `);
 }
 
 async function loadHeaderStats() {
