@@ -3415,14 +3415,24 @@ function openHollyModal() {
     ],
   };
 
-  const renderTable = (rows) => rows.map((r, i) => {
-    const prev = rows[i - 1];
+  const calcPace = (time, dist) => {
+    const [m, s] = time.split(':').map(Number);
+    const totalSecs = m * 60 + s;
+    const paceSecs = totalSecs / dist;
+    const pm = Math.floor(paceSecs / 60);
+    const ps = Math.round(paceSecs % 60);
+    return `${pm}:${String(ps).padStart(2,'0')}/km`;
+  };
+
+  const renderTable = (rows, dist) => [...rows].reverse().map((r, i, arr) => {
+    const prev = arr[i + 1]; // previous in original order = next in reversed
     const improved = prev ? (() => {
       const [pm, ps] = prev.time.split(':').map(Number);
       const [cm, cs] = r.time.split(':').map(Number);
       const diff = (pm * 60 + ps) - (cm * 60 + cs);
       return diff > 0 ? `<span style="color:#16a34a;font-size:10px;margin-left:4px;">-${Math.floor(diff/60)}:${String(diff%60).padStart(2,'0')}</span>` : '';
     })() : '';
+    const pace = calcPace(r.time, dist);
     return `<tr style="border-bottom:1px solid var(--border);">
       <td style="padding:9px 12px;font-family:monospace;font-size:12px;color:var(--muted);">${r.date}</td>
       <td style="padding:9px 12px;text-align:center;font-size:12px;color:var(--muted);">${r.age}y</td>
@@ -3430,6 +3440,7 @@ function openHollyModal() {
         <span style="font-family:monospace;font-size:14px;font-weight:700;color:${r.pb ? '#f472b6' : 'var(--text)'};">${r.time}</span>
         ${r.pb ? '<span style="font-size:10px;background:#fdf2f8;color:#f472b6;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700;">PB</span>' : improved}
       </td>
+      <td style="padding:9px 12px;text-align:center;font-family:monospace;font-size:12px;color:var(--muted);">${pace}</td>
       <td style="padding:9px 12px;font-size:11px;color:var(--muted);">${r.event}</td>
       <td style="padding:9px 12px;font-size:11px;color:var(--muted);">${r.city}</td>
     </tr>`;
@@ -3439,6 +3450,7 @@ function openHollyModal() {
     <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:left;">Date</th>
     <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:center;">Age</th>
     <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:center;">Time</th>
+    <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:center;">Pace</th>
     <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:left;">Event</th>
     <th style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:left;">City</th>
   </tr></thead>`;
@@ -3452,13 +3464,13 @@ function openHollyModal() {
       <div style="margin-bottom:20px;">
         <div style="font-size:13px;font-weight:700;color:#db2777;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #fce7f3;">🏃 2 km — Des Connor Park Juniors</div>
         <table style="width:100%;border-collapse:collapse;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);">
-          ${thead}<tbody>${renderTable(HOLLY['2km'])}</tbody>
+          ${thead}<tbody>${renderTable(HOLLY['2km'], 2)}</tbody>
         </table>
       </div>
       <div>
         <div style="font-size:13px;font-weight:700;color:#db2777;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #fce7f3;">🏅 5 km — Parkruns</div>
         <table style="width:100%;border-collapse:collapse;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border);">
-          ${thead}<tbody>${renderTable(HOLLY['5km'])}</tbody>
+          ${thead}<tbody>${renderTable(HOLLY['5km'], 5)}</tbody>
         </table>
       </div>
     </div>
