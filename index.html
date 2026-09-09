@@ -4074,25 +4074,24 @@ async function render() {
 
     const pop = cityData.population ? '👥 ' + cityData.population.toLocaleString() : '';
 
-    // Cover photo (only)
+    // Cover photo + wiki summary side by side
     const coverHTML = cityData.cover_photo
-      ? '<div class="city-photo-slot' + (isAdmin() ? '' : ' viewer-photo-slot') + '" style="height:220px;border-radius:12px;overflow:hidden;margin-bottom:16px;" ' + (isAdmin() ? 'onclick="uploadCityPhoto(' + cityData.id + ',\'cover_photo\')"' : '') + '>'
+      ? '<div class="city-photo-slot' + (isAdmin() ? '' : ' viewer-photo-slot') + '" style="height:220px;width:340px;flex-shrink:0;border-radius:12px;overflow:hidden;" ' + (isAdmin() ? 'onclick="uploadCityPhoto(' + cityData.id + ',\'cover_photo\')"' : '') + '>'
         + '<img src="' + cityData.cover_photo + '" style="width:100%;height:100%;object-fit:cover;">'
         + '<div class="slot-overlay admin-only"><button class="slot-btn" onclick="event.stopPropagation();uploadCityPhoto(' + cityData.id + ',\'cover_photo\')">Change</button>'
         + '<button class="slot-btn" style="color:#d03030;" onclick="event.stopPropagation();removeCityPhoto(' + cityData.id + ',\'cover_photo\')">Remove</button></div>'
         + '</div>'
-      : '<div class="admin-only" style="margin-bottom:16px;"><div class="city-photo-slot" onclick="uploadCityPhoto(' + cityData.id + ',\'cover_photo\')" style="height:120px;border-radius:12px;overflow:hidden;"><div class="slot-empty"><span>📷</span><span>Add Cover Photo</span></div></div></div>';
+      : '<div class="admin-only" style="width:340px;flex-shrink:0;"><div class="city-photo-slot" onclick="uploadCityPhoto(' + cityData.id + ',\'cover_photo\')" style="height:220px;border-radius:12px;overflow:hidden;"><div class="slot-empty"><span>📷</span><span>Add Cover Photo</span></div></div></div>';
 
-    // Wikipedia URL field + summary
     const wikiUrl = cityData.wikipedia_url || '';
-    const wikiField = `<div id="wiki-section" style="margin-bottom:16px;">
-      <div id="wiki-summary-area"></div>
-      <div class="admin-only" style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+    const wikiField = `<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0;">
+      <div id="wiki-summary-area" style="flex:1;overflow:hidden;"></div>
+      <div class="admin-only" style="margin-top:10px;display:flex;align-items:center;gap:8px;">
         <input id="wiki-url-input" type="text" value="${wikiUrl}"
-          placeholder="Paste Wikipedia URL here (e.g. https://en.wikipedia.org/wiki/Brisbane)"
-          style="flex:1;padding:8px 12px;font-size:12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none;"
+          placeholder="Paste Wikipedia URL (e.g. https://en.wikipedia.org/wiki/Brisbane)"
+          style="flex:1;padding:10px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none;"
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
-        <button onclick="saveWikiUrl(${cityData.id})" style="padding:8px 14px;font-size:12px;font-weight:600;border:none;border-radius:8px;background:var(--blue);color:#fff;cursor:pointer;">Save</button>
+        <button onclick="saveWikiUrl(${cityData.id})" style="padding:10px 16px;font-size:13px;font-weight:600;border:none;border-radius:8px;background:var(--blue);color:#fff;cursor:pointer;white-space:nowrap;">Save</button>
       </div>
     </div>`;
 
@@ -4106,8 +4105,10 @@ async function render() {
       + (pop ? '<span style="color:var(--border);">·</span><span>' + pop + '</span>' : '')
       + '</div>'
       + '</div>'
+      + '<div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:16px;">'
       + coverHTML
       + wikiField
+      + '</div>'
       + '<div class="city-quick-stats">'
       + qsBox('🏅', cs.hm, cs.hmTotal, 'Half Marathons', 'var(--run)')
       + qsBox('🏃', cs.pk, cs.pkTotal, 'Parkruns', 'var(--parkrun)')
