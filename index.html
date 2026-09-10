@@ -844,6 +844,22 @@
     font-size: 14px;
     table-layout: auto;
   }
+  /* Freeze first 2 columns in pk-table */
+  .pk-table th:nth-child(1), .pk-table td:nth-child(1) {
+    position: sticky; left: 0; z-index: 3; background: inherit;
+  }
+  .pk-table th:nth-child(2), .pk-table td:nth-child(2) {
+    position: sticky; left: 36px; z-index: 3; background: inherit;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.06);
+  }
+  .pk-table tbody tr.pk-done td:nth-child(1),
+  .pk-table tbody tr.pk-done td:nth-child(2) { background: #eef9f1; }
+  .pk-table tbody tr.pk-done:hover td:nth-child(1),
+  .pk-table tbody tr.pk-done:hover td:nth-child(2) { background: #e2f5e8; }
+  .pk-table tbody tr.pk-pending td:nth-child(1),
+  .pk-table tbody tr.pk-pending td:nth-child(2) { background: #fff5f5; }
+  .pk-table tbody tr.pk-pending:hover td:nth-child(1),
+  .pk-table tbody tr.pk-pending:hover td:nth-child(2) { background: #ffe8e8; }
   .pk-table th {
     background: var(--bg);
     color: var(--muted);
@@ -938,6 +954,18 @@
     font-size: 14px;
     table-layout: auto;
   }
+  /* Freeze first 2 columns in hm-table */
+  .hm-table th:nth-child(1), .hm-table td:nth-child(1) {
+    position: sticky; left: 0; z-index: 3; background: inherit;
+  }
+  .hm-table th:nth-child(2), .hm-table td:nth-child(2) {
+    position: sticky; left: 36px; z-index: 3; background: inherit;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.06);
+  }
+  .hm-table tbody tr.hm-done td:nth-child(1),
+  .hm-table tbody tr.hm-done td:nth-child(2) { background: #edfaf3; }
+  .hm-table tbody tr.hm-done:hover td:nth-child(1),
+  .hm-table tbody tr.hm-done:hover td:nth-child(2) { background: #dcf5e7; }
   .hm-table th {
     background: var(--bg);
     color: var(--muted);
@@ -1600,7 +1628,7 @@ async function loadWikiSummary(wikiUrl) {
     const sentences = extract.replace(/\n+/g, ' ').split(/(?<=[.!?])\s+/);
     const summary = sentences.slice(0, 4).join(' ');
     area.innerHTML = `
-      <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:10px;">${summary}</div>
+      <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:10px;text-align:justify;">${summary}</div>
       <a href="${wikiUrl}" target="_blank" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:600;">📖 Read more on Wikipedia ↗</a>`;
   } catch(e) {
     area.innerHTML = '';
