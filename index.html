@@ -1883,54 +1883,258 @@ const cuisineTypes = [
 ];
 
 
+// ════════════════════════════════════════
+// LANDMARKS
+// ════════════════════════════════════════
+async function renderLandmarksTab(city) {
+  const container = document.getElementById('city-tab-content');
+  container.innerHTML = `
+    <div class="action-btn-row admin-only">
+      <button class="action-btn" style="background:var(--blue);" onclick="openLandmarkForm(${city.id})">+ Add Landmark</button>
+    </div>
+    <div id="landmarks-grid">Loading...</div>`;
+
+  const { data: landmarks } = await sb.from('landmarks')
+    .select('*').eq('city_id', city.id).order('name');
+
+  const grid = document.getElementById('landmarks-grid');
+  if (!grid) return;
+
+  if (!landmarks?.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="es-icon">📍</div><div class="es-text">No landmarks yet.</div></div>';
+    return;
+  }
+
+  grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:8px;">
+    ${landmarks.map(lm => `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);position:relative;">
+        <div class="admin-only" style="position:absolute;top:10px;right:10px;display:flex;gap:4px;">
+          <button onclick="openLandmarkEditForm(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:13px;">✏️</button>
+          <button onclick="deleteLandmark(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:13px;color:#d03030;">🗑</button>
+        </div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;padding-right:48px;">📍 ${lm.name}</div>
+        ${lm.description ? `<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:8px;">${lm.description}</div>` : ''}
+        ${lm.wikipedia_url ? `<a href="${lm.wikipedia_url}" target="_blank" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:600;">📖 Wikipedia ↗</a>` : ''}
+      </div>`).join('')}
+  </div>`;
+
+  // Update count
+  const el = document.getElementById('landmark-count');
+  if (el) el.textContent = landmarks.length;
+}
+
+function openLandmarkForm(cityId) {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">📍 Add Landmark</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="landmark-form-error"></div>
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="lm-name" placeholder="e.g. Story Bridge" autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description <span class="optional">(optional)</span></label>
+        <textarea class="form-input" id="lm-desc" rows="3" placeholder="Brief description..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Wikipedia URL <span class="optional">(optional)</span></label>
+        <input class="form-input" id="lm-wiki" placeholder="https://en.wikipedia.org/wiki/Story_Bridge">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="lm-save-btn" onclick="submitLandmarkForm(${cityId})">Save Landmark</button>
+    </div>`);
+}
+
+async function submitLandmarkForm(cityId) {
+  const name = document.getElementById('lm-name')?.value.trim();
+  const btn = document.getElementById('lm-save-btn');
+  const err = document.getElementById('landmark-form-error');
+  if (!name) { err.innerHTML = '<div class="form-error">Name is required.</div>'; return; }
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  // Auto-fetch coordinates from Wikipedia if URL given
+  const wikiUrl = document.getElementById('lm-wiki')?.value.trim() || null;
+  let lat = null, lng = null;
+  if (wikiUrl) {
+    try {
+      const title = decodeURIComponent(wikiUrl.split('/wiki/')[1] || '');
+      const r = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=coordinates&titles=${encodeURIComponent(title)}&format=json&origin=*`);
+      const d = await r.json();
+      const pages = d.query.pages;
+      const page = pages[Object.keys(pages)[0]];
+      if (page?.coordinates?.[0]) { lat = page.coordinates[0].lat; lng = page.coordinates[0].lon; }
+    } catch(e) {}
+  }
+
+  const { error } = await sb.from('landmarks').insert({
+    city_id: cityId,
+    name,
+    description: document.getElementById('lm-desc')?.value.trim() || null,
+    wikipedia_url: wikiUrl,
+    latitude: lat,
+    longitude: lng,
+  });
+
+  if (error) { err.innerHTML = `<div class="form-error">${error.message}</div>`; btn.disabled = false; btn.textContent = 'Save Landmark'; return; }
+  closeModal();
+  const { city } = window._cityTabData || {};
+  if (city) renderLandmarksTab(city);
+}
+
+function openLandmarkEditForm(landmarkId, cityId) {
+  sb.from('landmarks').select('*').eq('id', landmarkId).single().then(({ data: lm }) => {
+    if (!lm) return;
+    showModal(`
+      <div class="modal-header">
+        <div class="modal-title">✏️ Edit Landmark</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="landmark-edit-error"></div>
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input class="form-input" id="lme-name" value="${lm.name}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-input" id="lme-desc" rows="3">${lm.description || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Wikipedia URL</label>
+          <input class="form-input" id="lme-wiki" value="${lm.wikipedia_url || ''}">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" id="lme-save-btn" onclick="submitLandmarkEdit(${landmarkId},${cityId})">Save</button>
+      </div>`);
+  });
+}
+
+async function submitLandmarkEdit(landmarkId, cityId) {
+  const name = document.getElementById('lme-name')?.value.trim();
+  const btn = document.getElementById('lme-save-btn');
+  if (!name) return;
+  btn.disabled = true; btn.textContent = 'Saving...';
+  await sb.from('landmarks').update({
+    name,
+    description: document.getElementById('lme-desc')?.value.trim() || null,
+    wikipedia_url: document.getElementById('lme-wiki')?.value.trim() || null,
+  }).eq('id', landmarkId);
+  closeModal();
+  const { city } = window._cityTabData || {};
+  if (city) renderLandmarksTab(city);
+}
+
+async function deleteLandmark(landmarkId, cityId) {
+  if (!confirm('Delete this landmark?')) return;
+  await sb.from('landmarks').delete().eq('id', landmarkId);
+  const { city } = window._cityTabData || {};
+  if (city) renderLandmarksTab(city);
+}
+
+// ════════════════════════════════════════
+// CITY MAP (HM + Parkruns + Landmarks)
+// ════════════════════════════════════════
+async function renderCityMap(city) {
+  const container = document.getElementById('city-tab-content');
+  container.innerHTML = `<div id="city-map-container" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);height:480px;"></div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--muted);">
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>Half Marathon</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#16a34a;display:inline-block;"></span>Parkrun</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:50%;background:#2a78d6;display:inline-block;"></span>Landmark</span>
+    </div>`;
+
+  // Load Leaflet
+  if (!document.getElementById('leaflet-css')) {
+    const link = document.createElement('link');
+    link.id = 'leaflet-css'; link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(link);
+  }
+  if (!window.L) {
+    await new Promise(resolve => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      s.onload = resolve; document.head.appendChild(s);
+    });
+  }
+
+  // Load all data in parallel
+  const [{ data: hmRaces }, { data: pkLocs }, { data: landmarks }] = await Promise.all([
+    sb.from('half_marathon_races').select('id, name').eq('city_id', city.id),
+    sb.from('parkrun_locations').select('id, name, latitude, longitude').eq('city_id', city.id).not('latitude', 'is', null),
+    sb.from('landmarks').select('*').eq('city_id', city.id).not('latitude', 'is', null),
+  ]);
+
+  const mapContainer = document.getElementById('city-map-container');
+  if (!mapContainer) return;
+
+  const center = city.latitude && city.longitude ? [city.latitude, city.longitude] : [-27.4698, 153.0251];
+  const map = L.map(mapContainer, { center, zoom: 12 });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 19
+  }).addTo(map);
+
+  const makeIcon = (color) => L.divIcon({
+    className: '',
+    html: `<svg width="28" height="40" viewBox="0 0 28 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 0C6.27 0 0 6.27 0 14c0 9.33 14 26 14 26S28 23.33 28 14C28 6.27 21.73 0 14 0z" fill="${color}" stroke="#fff" stroke-width="2"/>
+      <circle cx="14" cy="14" r="6" fill="#fff"/>
+    </svg>`,
+    iconSize: [28, 40], iconAnchor: [14, 40], popupAnchor: [0, -42],
+  });
+
+  const markers = [];
+
+  // HM — city center marker (orange)
+  if (hmRaces?.length && city.latitude) {
+    const names = hmRaces.map(r => `🏅 ${r.name}`).join('<br>');
+    const m = L.marker(center, { icon: makeIcon('#f59e0b') }).addTo(map)
+      .bindPopup(`<div style="font-family:-apple-system,sans-serif;min-width:160px;"><div style="font-weight:700;margin-bottom:6px;">${city.name}</div>${names}</div>`);
+    markers.push(m);
+  }
+
+  // Parkruns — green
+  (pkLocs || []).forEach(loc => {
+    const m = L.marker([loc.latitude, loc.longitude], { icon: makeIcon('#16a34a') }).addTo(map)
+      .bindPopup(`<div style="font-family:-apple-system,sans-serif;"><div style="font-weight:700;">🏃 ${loc.name}</div></div>`);
+    markers.push(m);
+  });
+
+  // Landmarks — blue
+  (landmarks || []).forEach(lm => {
+    const m = L.marker([lm.latitude, lm.longitude], { icon: makeIcon('#2a78d6') }).addTo(map)
+      .bindPopup(`<div style="font-family:-apple-system,sans-serif;min-width:180px;">
+        <div style="font-weight:700;margin-bottom:4px;">📍 ${lm.name}</div>
+        ${lm.description ? `<div style="font-size:12px;color:#555;margin-bottom:6px;">${lm.description}</div>` : ''}
+        ${lm.wikipedia_url ? `<a href="${lm.wikipedia_url}" target="_blank" style="font-size:11px;color:#2a78d6;font-weight:600;">📖 Wikipedia ↗</a>` : ''}
+      </div>`);
+    markers.push(m);
+  });
+
+  // Fit bounds if multiple markers
+  if (markers.length > 1) {
+    const group = L.featureGroup(markers);
+    map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 14 });
+  }
+}
+
 function showCityTab(tab) {
-  // Update tab active state
-  ['overview','halfmarathons','parkruns','tourism'].forEach(t => {
+  ['halfmarathons','parkruns','landmarks','map'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.classList.toggle('active', t === tab);
   });
 
   const container = document.getElementById('city-tab-content');
   if (!container) return;
-  const { city, country, tourism, cs, activities } = window._cityTabData || {};
+  const { city, country, cs } = window._cityTabData || {};
   if (!city) return;
-
-  if (tab === 'overview') {
-    // Summary of all categories with counts
-    const catRows = Object.entries(tourismMeta).map(([key, meta]) => {
-      const entries = tourism.filter(t => t.category === key);
-      if (entries.length === 0) return '';
-      const visited = entries.filter(t => t.visit_date).length;
-      const stars = entries.filter(t => t.rating).map(t => parseFloat(t.rating));
-      const avgRating = stars.length > 0 ? (stars.reduce((a,b)=>a+b,0)/stars.length).toFixed(1) : null;
-      const pct = entries.length > 0 ? ((visited/entries.length)*100).toFixed(0)+'%' : '—';
-      return `<tr onclick="showCityTab('tourism')" style="cursor:pointer;">
-        <td style="padding:10px 14px;font-size:18px;">${meta.icon}</td>
-        <td style="padding:10px 14px;font-weight:600;">${meta.name}</td>
-        <td style="padding:10px 14px;text-align:center;color:var(--green);font-weight:700;">${visited}</td>
-        <td style="padding:10px 14px;text-align:center;color:#d03030;font-weight:700;">${entries.length - visited}</td>
-        <td style="padding:10px 14px;text-align:center;color:var(--blue);font-weight:700;">${pct}</td>
-        <td style="padding:10px 14px;text-align:center;">${avgRating ? '⭐ ' + avgRating : '—'}</td>
-      </tr>`;
-    }).filter(Boolean).join('');
-
-    container.innerHTML = catRows
-      ? `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);">
-          <table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="background:var(--bg);">
-              <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);"></th>
-              <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);">Category</th>
-              <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);">Visited</th>
-              <th style="padding:10px 14px;text-align:center;font-size:11px;color:#d03030;text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);">Pending</th>
-              <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--blue);text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);">% Done</th>
-              <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;border-bottom:2px solid var(--border);">Avg Rating</th>
-            </tr></thead>
-            <tbody>${catRows}</tbody>
-          </table>
-        </div>`
-      : `<div class="empty-state"><div class="es-icon">🧭</div><div class="es-text">No tourism entries yet. Add places in the Tourism tab!</div></div>`;
-    return;
-  }
 
   if (tab === 'halfmarathons') {
     container.innerHTML = `
@@ -1952,8 +2156,13 @@ function showCityTab(tab) {
     return;
   }
 
-  if (tab === 'tourism') {
-    renderTourismTab(city, tourism);
+  if (tab === 'landmarks') {
+    renderLandmarksTab(city);
+    return;
+  }
+
+  if (tab === 'map') {
+    renderCityMap(city);
     return;
   }
 }
@@ -4148,10 +4357,18 @@ async function render() {
       + '<div class="city-quick-stats">'
       + qsBox('🏅', cs.hm, cs.hmTotal, 'Half Marathons', 'var(--run)')
       + qsBox('🏃', cs.pk, cs.pkTotal, 'Parkruns', 'var(--parkrun)')
+      + '<div class="city-qs-box" id="landmarks-qs-box" onclick="showCityTab(\'landmarks\')" style="cursor:pointer;">'
+      + '<div class="city-qs-icon">📍</div>'
+      + '<div class="city-qs-val"><span class="done" style="color:var(--blue);" id="landmark-count">—</span></div>'
+      + '<div class="city-qs-label">Landmarks</div>'
+      + '<div class="city-progress-bar"><div class="city-progress-fill" id="landmark-bar" style="width:0%;background:var(--blue);"></div></div>'
+      + '</div>'
       + '</div>'
       + '<div class="city-section-tabs">'
       + '<div class="city-tab active" id="tab-halfmarathons" onclick="showCityTab(\'halfmarathons\')">🏅 Half Marathons</div>'
       + '<div class="city-tab" id="tab-parkruns" onclick="showCityTab(\'parkruns\')">🏃 Parkruns</div>'
+      + '<div class="city-tab" id="tab-landmarks" onclick="showCityTab(\'landmarks\')">📍 Landmarks</div>'
+      + '<div class="city-tab" id="tab-map" onclick="showCityTab(\'map\')">🗺️ Map</div>'
       + '</div>'
       + '<div id="city-tab-content"></div>';
 
@@ -4159,6 +4376,12 @@ async function render() {
 
     // Load Wikipedia summary if URL exists
     if (wikiUrl) loadWikiSummary(wikiUrl);
+
+    // Load landmark count
+    sb.from('landmarks').select('id', { count: 'exact', head: true }).eq('city_id', cityData.id).then(({ count }) => {
+      const el = document.getElementById('landmark-count');
+      if (el) el.textContent = count || 0;
+    });
 
     showCityTab('halfmarathons');
     return;
