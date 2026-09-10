@@ -1889,26 +1889,58 @@ const cuisineTypes = [
 async function renderLandmarksTab(city) {
   const container = document.getElementById('city-tab-content');
   container.innerHTML = `
-    <div class="action-btn-row admin-only">
-      <button class="action-btn" style="background:var(--blue);" onclick="openLandmarkForm(${city.id})">+ Add Landmark</button>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <input type="text" id="lm-search" placeholder="🔍 Search landmarks..."
+        oninput="filterLandmarks()"
+        style="flex:1;min-width:160px;padding:8px 12px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);outline:none;"
+        onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
+      <select id="lm-filter" onchange="filterLandmarks()"
+        style="padding:8px 12px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);">
+        <option value="all">All</option>
+        <option value="visited">Visited</option>
+        <option value="pending">Not visited</option>
+      </select>
+      <button class="action-btn admin-only" style="background:var(--blue);" onclick="openLandmarkForm(${city.id})">+ Add</button>
     </div>
     <div id="landmarks-grid">Loading...</div>`;
 
   const { data: landmarks } = await sb.from('landmarks')
     .select('*').eq('city_id', city.id).order('name');
 
+  window._landmarksData = landmarks || [];
+  renderLandmarksGrid(city);
+}
+
+function filterLandmarks() {
+  const { city } = window._cityTabData || {};
+  if (city) renderLandmarksGrid(city);
+}
+
+function renderLandmarksGrid(city) {
   const grid = document.getElementById('landmarks-grid');
   if (!grid) return;
 
-  if (!landmarks?.length) {
-    grid.innerHTML = '<div class="empty-state"><div class="es-icon">🏛️</div><div class="es-text">No landmarks yet.</div></div>';
+  const q = (document.getElementById('lm-search')?.value || '').toLowerCase().trim();
+  const filter = document.getElementById('lm-filter')?.value || 'all';
+  let landmarks = [...(window._landmarksData || [])];
+
+  if (q) landmarks = landmarks.filter(l => l.name.toLowerCase().includes(q));
+  if (filter === 'visited') landmarks = landmarks.filter(l => l.visited);
+  if (filter === 'pending') landmarks = landmarks.filter(l => !l.visited);
+
+  if (!landmarks.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="es-icon">🏛️</div><div class="es-text">No landmarks match.</div></div>';
     return;
   }
 
-  const visited = landmarks.filter(l => l.visited).length;
-  const total = landmarks.length;
+  const visited = (window._landmarksData || []).filter(l => l.visited).length;
+  const total = (window._landmarksData || []).length;
+  const el = document.getElementById('landmark-count');
+  if (el) el.textContent = total > 0 ? visited + '/' + total : total;
+  const bar = document.getElementById('landmark-bar');
+  if (bar) bar.style.width = (total > 0 ? (visited/total*100) : 0) + '%';
 
-  grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:8px;">
+  grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
     ${landmarks.map(lm => {
       const bg = lm.visited ? '#16a34a' : 'var(--card)';
       const color = lm.visited ? '#fff' : 'var(--text)';
@@ -1928,18 +1960,14 @@ async function renderLandmarksTab(city) {
       </div>`;
     }).join('')}
   </div>`;
-
-  // Update quick stats card
-  const el = document.getElementById('landmark-count');
-  if (el) el.textContent = visited + '/' + total;
-  const bar = document.getElementById('landmark-bar');
-  if (bar) bar.style.width = (total > 0 ? (visited/total*100) : 0) + '%';
 }
 
 async function toggleLandmarkVisited(landmarkId, visited, cityId) {
   await sb.from('landmarks').update({ visited }).eq('id', landmarkId);
+  const lm = window._landmarksData?.find(l => l.id === landmarkId);
+  if (lm) lm.visited = visited === 'true' || visited === true;
   const { city } = window._cityTabData || {};
-  if (city) renderLandmarksTab(city);
+  if (city) renderLandmarksGrid(city);
 }
 
 function openLandmarkForm(cityId) {
