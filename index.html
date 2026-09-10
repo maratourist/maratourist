@@ -1901,32 +1901,49 @@ async function renderLandmarksTab(city) {
   if (!grid) return;
 
   if (!landmarks?.length) {
-    grid.innerHTML = '<div class="empty-state"><div class="es-icon">📍</div><div class="es-text">No landmarks yet.</div></div>';
+    grid.innerHTML = '<div class="empty-state"><div class="es-icon">🏛️</div><div class="es-text">No landmarks yet.</div></div>';
     return;
   }
 
-  grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:8px;">
-    ${landmarks.map(lm => `
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);position:relative;">
-        <div class="admin-only" style="position:absolute;top:10px;right:10px;display:flex;gap:4px;">
+  const visited = landmarks.filter(l => l.visited).length;
+  const total = landmarks.length;
+
+  grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:8px;">
+    ${landmarks.map(lm => {
+      const bg = lm.visited ? '#16a34a' : 'var(--card)';
+      const color = lm.visited ? '#fff' : 'var(--text)';
+      const border = lm.visited ? '#16a34a' : 'var(--border)';
+      const mutedColor = lm.visited ? 'rgba(255,255,255,0.8)' : 'var(--muted)';
+      return `
+      <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);position:relative;transition:all 0.15s;">
+        <div class="admin-only" style="position:absolute;top:8px;right:8px;display:flex;gap:4px;">
+          <button onclick="toggleLandmarkVisited(${lm.id},${lm.visited ? 'false' : 'true'},${city.id})" style="background:none;border:none;cursor:pointer;font-size:13px;" title="${lm.visited ? 'Mark unvisited' : 'Mark visited'}">${lm.visited ? '✅' : '⬜'}</button>
           <button onclick="openLandmarkEditForm(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:13px;">✏️</button>
-          <button onclick="deleteLandmark(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:13px;color:#d03030;">🗑</button>
+          <button onclick="deleteLandmark(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:13px;color:${lm.visited ? 'rgba(255,255,255,0.8)' : '#d03030'};">🗑</button>
         </div>
-        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;padding-right:48px;">📍 ${lm.name}</div>
-        ${lm.description ? `<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:8px;">${lm.description}</div>` : ''}
-        ${lm.wikipedia_url ? `<a href="${lm.wikipedia_url}" target="_blank" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:600;">📖 Wikipedia ↗</a>` : ''}
-      </div>`).join('')}
+        <div style="font-size:14px;font-weight:700;color:${color};padding-right:72px;margin-bottom:${lm.wikipedia_url ? '8px' : '0'};">🏛️ ${lm.name}</div>
+        ${lm.wikipedia_url ? `<a href="${lm.wikipedia_url}" target="_blank" style="font-size:11px;color:${mutedColor};text-decoration:none;font-weight:600;">📖 Wikipedia ↗</a>` : ''}
+      </div>`;
+    }).join('')}
   </div>`;
 
-  // Update count
+  // Update quick stats card
   const el = document.getElementById('landmark-count');
-  if (el) el.textContent = landmarks.length;
+  if (el) el.textContent = visited + '/' + total;
+  const bar = document.getElementById('landmark-bar');
+  if (bar) bar.style.width = (total > 0 ? (visited/total*100) : 0) + '%';
+}
+
+async function toggleLandmarkVisited(landmarkId, visited, cityId) {
+  await sb.from('landmarks').update({ visited }).eq('id', landmarkId);
+  const { city } = window._cityTabData || {};
+  if (city) renderLandmarksTab(city);
 }
 
 function openLandmarkForm(cityId) {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">📍 Add Landmark</div>
+      <div class="modal-title">🏛️ Add Landmark</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
@@ -1934,10 +1951,6 @@ function openLandmarkForm(cityId) {
       <div class="form-group">
         <label class="form-label">Name</label>
         <input class="form-input" id="lm-name" placeholder="e.g. Story Bridge" autofocus>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Description <span class="optional">(optional)</span></label>
-        <textarea class="form-input" id="lm-desc" rows="3" placeholder="Brief description..."></textarea>
       </div>
       <div class="form-group">
         <label class="form-label">Wikipedia URL <span class="optional">(optional)</span></label>
@@ -1957,7 +1970,6 @@ async function submitLandmarkForm(cityId) {
   if (!name) { err.innerHTML = '<div class="form-error">Name is required.</div>'; return; }
   btn.disabled = true; btn.textContent = 'Saving...';
 
-  // Auto-fetch coordinates from Wikipedia if URL given
   const wikiUrl = document.getElementById('lm-wiki')?.value.trim() || null;
   let lat = null, lng = null;
   if (wikiUrl) {
@@ -1972,12 +1984,7 @@ async function submitLandmarkForm(cityId) {
   }
 
   const { error } = await sb.from('landmarks').insert({
-    city_id: cityId,
-    name,
-    description: document.getElementById('lm-desc')?.value.trim() || null,
-    wikipedia_url: wikiUrl,
-    latitude: lat,
-    longitude: lng,
+    city_id: cityId, name, wikipedia_url: wikiUrl, latitude: lat, longitude: lng,
   });
 
   if (error) { err.innerHTML = `<div class="form-error">${error.message}</div>`; btn.disabled = false; btn.textContent = 'Save Landmark'; return; }
@@ -2001,10 +2008,6 @@ function openLandmarkEditForm(landmarkId, cityId) {
           <input class="form-input" id="lme-name" value="${lm.name}">
         </div>
         <div class="form-group">
-          <label class="form-label">Description</label>
-          <textarea class="form-input" id="lme-desc" rows="3">${lm.description || ''}</textarea>
-        </div>
-        <div class="form-group">
           <label class="form-label">Wikipedia URL</label>
           <input class="form-input" id="lme-wiki" value="${lm.wikipedia_url || ''}">
         </div>
@@ -2023,7 +2026,6 @@ async function submitLandmarkEdit(landmarkId, cityId) {
   btn.disabled = true; btn.textContent = 'Saving...';
   await sb.from('landmarks').update({
     name,
-    description: document.getElementById('lme-desc')?.value.trim() || null,
     wikipedia_url: document.getElementById('lme-wiki')?.value.trim() || null,
   }).eq('id', landmarkId);
   closeModal();
@@ -2111,7 +2113,7 @@ async function renderCityMap(city) {
   (landmarks || []).forEach(lm => {
     const m = L.marker([lm.latitude, lm.longitude], { icon: makeIcon('#2a78d6') }).addTo(map)
       .bindPopup(`<div style="font-family:-apple-system,sans-serif;min-width:180px;">
-        <div style="font-weight:700;margin-bottom:4px;">📍 ${lm.name}</div>
+        <div style="font-weight:700;margin-bottom:4px;">🏛️ ${lm.name}</div>
         ${lm.description ? `<div style="font-size:12px;color:#555;margin-bottom:6px;">${lm.description}</div>` : ''}
         ${lm.wikipedia_url ? `<a href="${lm.wikipedia_url}" target="_blank" style="font-size:11px;color:#2a78d6;font-weight:600;">📖 Wikipedia ↗</a>` : ''}
       </div>`);
@@ -4358,7 +4360,7 @@ async function render() {
       + qsBox('🏅', cs.hm, cs.hmTotal, 'Half Marathons', 'var(--run)')
       + qsBox('🏃', cs.pk, cs.pkTotal, 'Parkruns', 'var(--parkrun)')
       + '<div class="city-qs-box" id="landmarks-qs-box" onclick="showCityTab(\'landmarks\')" style="cursor:pointer;">'
-      + '<div class="city-qs-icon">📍</div>'
+      + '<div class="city-qs-icon">🏛️</div>'
       + '<div class="city-qs-val"><span class="done" style="color:var(--blue);" id="landmark-count">—</span></div>'
       + '<div class="city-qs-label">Landmarks</div>'
       + '<div class="city-progress-bar"><div class="city-progress-fill" id="landmark-bar" style="width:0%;background:var(--blue);"></div></div>'
