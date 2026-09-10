@@ -1915,14 +1915,16 @@ async function renderLandmarksTab(city) {
       const border = lm.visited ? '#16a34a' : 'var(--border)';
       const mutedColor = lm.visited ? 'rgba(255,255,255,0.8)' : 'var(--muted)';
       return `
-      <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);position:relative;transition:all 0.15s;">
-        <div class="admin-only" style="position:absolute;top:8px;right:8px;display:flex;gap:4px;">
-          <button onclick="toggleLandmarkVisited(${lm.id},${lm.visited ? 'false' : 'true'},${city.id})" style="background:none;border:none;cursor:pointer;font-size:13px;" title="${lm.visited ? 'Mark unvisited' : 'Mark visited'}">${lm.visited ? '✅' : '⬜'}</button>
-          <button onclick="openLandmarkEditForm(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:13px;">✏️</button>
-          <button onclick="deleteLandmark(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:13px;color:${lm.visited ? 'rgba(255,255,255,0.8)' : '#d03030'};">🗑</button>
+      <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);transition:all 0.15s;display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:13px;font-weight:700;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${lm.name}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>${lm.wikipedia_url ? `<a href="${lm.wikipedia_url}" target="_blank" style="font-size:11px;color:${mutedColor};text-decoration:none;font-weight:600;">📖 Wikipedia ↗</a>` : ''}</div>
+          <div class="admin-only" style="display:flex;gap:4px;">
+            <button onclick="toggleLandmarkVisited(${lm.id},${lm.visited ? 'false' : 'true'},${city.id})" style="background:none;border:none;cursor:pointer;font-size:12px;" title="${lm.visited ? 'Mark unvisited' : 'Mark visited'}">${lm.visited ? '✅' : '⬜'}</button>
+            <button onclick="openLandmarkEditForm(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:12px;">✏️</button>
+            <button onclick="deleteLandmark(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:12px;color:${lm.visited ? 'rgba(255,255,255,0.8)' : '#d03030'};">🗑</button>
+          </div>
         </div>
-        <div style="font-size:14px;font-weight:700;color:${color};padding-right:72px;margin-bottom:${lm.wikipedia_url ? '8px' : '0'};">🏛️ ${lm.name}</div>
-        ${lm.wikipedia_url ? `<a href="${lm.wikipedia_url}" target="_blank" style="font-size:11px;color:${mutedColor};text-decoration:none;font-weight:600;">📖 Wikipedia ↗</a>` : ''}
       </div>`;
     }).join('')}
   </div>`;
@@ -4379,10 +4381,14 @@ async function render() {
     // Load Wikipedia summary if URL exists
     if (wikiUrl) loadWikiSummary(wikiUrl);
 
-    // Load landmark count
-    sb.from('landmarks').select('id', { count: 'exact', head: true }).eq('city_id', cityData.id).then(({ count }) => {
+    // Load landmark count immediately
+    sb.from('landmarks').select('id, visited').eq('city_id', cityData.id).then(({ data: lms }) => {
+      const total = lms?.length || 0;
+      const visited = lms?.filter(l => l.visited).length || 0;
       const el = document.getElementById('landmark-count');
-      if (el) el.textContent = count || 0;
+      if (el) el.textContent = total > 0 ? visited + '/' + total : total;
+      const bar = document.getElementById('landmark-bar');
+      if (bar) bar.style.width = (total > 0 ? (visited/total*100) : 0) + '%';
     });
 
     showCityTab('halfmarathons');
