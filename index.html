@@ -844,22 +844,35 @@
     font-size: 14px;
     table-layout: auto;
   }
-  /* Freeze first 2 columns in pk-table */
+  /* Freeze col 1 (dot) and col 2 (race name) — both header and body */
   .pk-table th:nth-child(1), .pk-table td:nth-child(1) {
-    position: sticky; left: 0; z-index: 3; background: inherit;
+    position: sticky; left: 0; z-index: 3;
   }
   .pk-table th:nth-child(2), .pk-table td:nth-child(2) {
-    position: sticky; left: 36px; z-index: 3; background: inherit;
-    box-shadow: 2px 0 4px rgba(0,0,0,0.06);
+    position: sticky; left: 36px; z-index: 3;
   }
+  .pk-table th:nth-child(3), .pk-table td:nth-child(3) {
+    position: sticky; left: 236px; z-index: 3;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.07);
+  }
+  .pk-table th:nth-child(1) { z-index: 5; background: var(--bg); top: 0; left: 0; }
+  .pk-table th:nth-child(2) { z-index: 5; background: var(--bg); top: 0; left: 36px; }
+  .pk-table th:nth-child(3) { z-index: 5; background: var(--bg); top: 0; left: 236px; }
+  .pk-table tbody tr td:nth-child(1),
+  .pk-table tbody tr td:nth-child(2),
+  .pk-table tbody tr td:nth-child(3) { background: var(--card); }
   .pk-table tbody tr.pk-done td:nth-child(1),
-  .pk-table tbody tr.pk-done td:nth-child(2) { background: #eef9f1; }
+  .pk-table tbody tr.pk-done td:nth-child(2),
+  .pk-table tbody tr.pk-done td:nth-child(3) { background: #eef9f1; }
   .pk-table tbody tr.pk-done:hover td:nth-child(1),
-  .pk-table tbody tr.pk-done:hover td:nth-child(2) { background: #e2f5e8; }
+  .pk-table tbody tr.pk-done:hover td:nth-child(2),
+  .pk-table tbody tr.pk-done:hover td:nth-child(3) { background: #e2f5e8; }
   .pk-table tbody tr.pk-pending td:nth-child(1),
-  .pk-table tbody tr.pk-pending td:nth-child(2) { background: #fff5f5; }
+  .pk-table tbody tr.pk-pending td:nth-child(2),
+  .pk-table tbody tr.pk-pending td:nth-child(3) { background: #fff5f5; }
   .pk-table tbody tr.pk-pending:hover td:nth-child(1),
-  .pk-table tbody tr.pk-pending:hover td:nth-child(2) { background: #ffe8e8; }
+  .pk-table tbody tr.pk-pending:hover td:nth-child(2),
+  .pk-table tbody tr.pk-pending:hover td:nth-child(3) { background: #ffe8e8; }
   .pk-table th {
     background: var(--bg);
     color: var(--muted);
@@ -954,18 +967,29 @@
     font-size: 14px;
     table-layout: auto;
   }
-  /* Freeze first 2 columns in hm-table */
+  /* Freeze col 1 (dot) and col 2 (race name) */
   .hm-table th:nth-child(1), .hm-table td:nth-child(1) {
-    position: sticky; left: 0; z-index: 3; background: inherit;
+    position: sticky; left: 0; z-index: 3;
   }
   .hm-table th:nth-child(2), .hm-table td:nth-child(2) {
-    position: sticky; left: 36px; z-index: 3; background: inherit;
-    box-shadow: 2px 0 4px rgba(0,0,0,0.06);
+    position: sticky; left: 36px; z-index: 3;
   }
+  .hm-table th:nth-child(3), .hm-table td:nth-child(3) {
+    position: sticky; left: 256px; z-index: 3;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.07);
+  }
+  .hm-table th:nth-child(1) { z-index: 5; background: var(--bg); top: 0; left: 0; }
+  .hm-table th:nth-child(2) { z-index: 5; background: var(--bg); top: 0; left: 36px; }
+  .hm-table th:nth-child(3) { z-index: 5; background: var(--bg); top: 0; left: 256px; }
+  .hm-table tbody tr td:nth-child(1),
+  .hm-table tbody tr td:nth-child(2),
+  .hm-table tbody tr td:nth-child(3) { background: var(--card); }
   .hm-table tbody tr.hm-done td:nth-child(1),
-  .hm-table tbody tr.hm-done td:nth-child(2) { background: #edfaf3; }
+  .hm-table tbody tr.hm-done td:nth-child(2),
+  .hm-table tbody tr.hm-done td:nth-child(3) { background: #edfaf3; }
   .hm-table tbody tr.hm-done:hover td:nth-child(1),
-  .hm-table tbody tr.hm-done:hover td:nth-child(2) { background: #dcf5e7; }
+  .hm-table tbody tr.hm-done:hover td:nth-child(2),
+  .hm-table tbody tr.hm-done:hover td:nth-child(3) { background: #dcf5e7; }
   .hm-table th {
     background: var(--bg);
     color: var(--muted);
