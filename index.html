@@ -1961,6 +1961,7 @@ function renderLandmarksGrid(city) {
     culture:      { icon: '🎨', label: 'Arte & Cultura' },
     nature:       { icon: '🌿', label: 'Natureza & Parques' },
     beach:        { icon: '🏖️', label: 'Praias' },
+    hotel:        { icon: '🏨', label: 'Hotels & Resorts' },
     religion:     { icon: '⛪', label: 'Religioso' },
     sports:       { icon: '🏟️', label: 'Esportes' },
     waterfront:   { icon: '🚢', label: 'Beira-rio' },
@@ -2083,6 +2084,7 @@ async function submitLandmarkForm(cityId) {
   if (/church|cathedral|chapel|temple|mosque|synagogue|pagoda|monastery/i.test(n)) autoCategory = 'religion';
   else if (/museum|gallery|theatre|theater|library|planetarium|powerhouse|arts|opera/i.test(n)) autoCategory = 'culture';
   else if (/beach|surf|coast|bay|cove|lagoon/i.test(n)) autoCategory = 'beach';
+  else if (/hotel|resort|retreat|lodge|motel|inn|spa|hostel/i.test(n)) autoCategory = 'hotel';
   else if (/suburb|valley|village|district|quarter|neighbourhood|neighborhood/i.test(n)) autoCategory = 'neighbourhood';
   else if (/park|garden|zoo|sanctuary|national park|nature|reserve|forest|mountain|mount|cliff/i.test(n)) autoCategory = 'nature';
   else if (/stadium|arena|tennis|cricket|football|sports|centre|center/i.test(n)) autoCategory = 'sports';
