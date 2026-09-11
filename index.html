@@ -1612,9 +1612,17 @@ async function removeCityPhoto(cityId, field) {
 }
 
 async function saveCityDescription(cityId) {
-  const desc = document.getElementById('city-desc-input')?.value.trim() || null;
-  const url  = document.getElementById('wiki-url-input')?.value.trim() || null;
-  await sb.from('cities').update({ description: desc, wikipedia_url: url }).eq('id', cityId);
+  const desc = document.getElementById('city-desc-input')?.value.trim();
+  const url  = document.getElementById('wiki-url-input')?.value.trim();
+  
+  const updates = {};
+  if (desc !== undefined) updates.description = desc || null;
+  if (url !== undefined) updates.wikipedia_url = url || null;
+  
+  if (Object.keys(updates).length) {
+    await sb.from('cities').update(updates).eq('id', cityId);
+  }
+
   // Refresh display
   const area = document.getElementById('wiki-summary-area');
   if (!area) return;
@@ -1678,14 +1686,6 @@ async function editCityDescription(cityId) {
       <button class="btn-primary" onclick="saveCityDescription(${cityId})">Save</button>
     </div>
   `);
-}
-
-async function saveCityDescription(cityId) {
-  const desc = document.getElementById('city-desc-input').value.trim();
-  const { error } = await sb.from('cities').update({ description: desc || null }).eq('id', cityId);
-  if (error) { alert('Error: ' + error.message); return; }
-  closeModal();
-  render();
 }
 
 // ════════════════════════════════════════
@@ -2083,11 +2083,11 @@ async function submitLandmarkForm(cityId) {
   if (/church|cathedral|chapel|temple|mosque|synagogue|pagoda|monastery/i.test(n)) autoCategory = 'religion';
   else if (/museum|gallery|theatre|theater|library|planetarium|powerhouse|arts|opera/i.test(n)) autoCategory = 'culture';
   else if (/beach|surf|coast|bay|cove|lagoon/i.test(n)) autoCategory = 'beach';
+  else if (/suburb|valley|village|district|quarter|neighbourhood|neighborhood/i.test(n)) autoCategory = 'neighbourhood';
   else if (/park|garden|zoo|sanctuary|national park|nature|reserve|forest|mountain|mount|cliff/i.test(n)) autoCategory = 'nature';
   else if (/stadium|arena|tennis|cricket|football|sports|centre|center/i.test(n)) autoCategory = 'sports';
   else if (/bridge|wharf|ferry|port|harbour|harbor|marina|waterfront|river/i.test(n)) autoCategory = 'waterfront';
   else if (/mall|shopping|arcade|plaza|market|shop|casino/i.test(n)) autoCategory = 'shopping';
-  else if (/suburb|valley|village|district|quarter|neighbourhood|neighborhood/i.test(n)) autoCategory = 'neighbourhood';
   else autoCategory = 'heritage';
 
   const { error } = await sb.from('landmarks').insert({
