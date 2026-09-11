@@ -1960,6 +1960,7 @@ function renderLandmarksGrid(city) {
     heritage:     { icon: '🏛️', label: 'Patrimônio Histórico' },
     culture:      { icon: '🎨', label: 'Arte & Cultura' },
     nature:       { icon: '🌿', label: 'Natureza & Parques' },
+    beach:        { icon: '🏖️', label: 'Praias' },
     religion:     { icon: '⛪', label: 'Religioso' },
     sports:       { icon: '🏟️', label: 'Esportes' },
     waterfront:   { icon: '🚢', label: 'Beira-rio' },
@@ -2081,10 +2082,11 @@ async function submitLandmarkForm(cityId) {
   const n = name.toLowerCase();
   if (/church|cathedral|chapel|temple|mosque|synagogue|pagoda|monastery/i.test(n)) autoCategory = 'religion';
   else if (/museum|gallery|theatre|theater|library|planetarium|powerhouse|arts|opera/i.test(n)) autoCategory = 'culture';
-  else if (/park|garden|zoo|sanctuary|national park|nature|reserve|forest|mountain|mount|cliff|beach/i.test(n)) autoCategory = 'nature';
+  else if (/beach|surf|coast|bay|cove|lagoon/i.test(n)) autoCategory = 'beach';
+  else if (/park|garden|zoo|sanctuary|national park|nature|reserve|forest|mountain|mount|cliff/i.test(n)) autoCategory = 'nature';
   else if (/stadium|arena|tennis|cricket|football|sports|centre|center/i.test(n)) autoCategory = 'sports';
-  else if (/bridge|wharf|ferry|port|harbour|harbor|marina|waterfront|river|bay/i.test(n)) autoCategory = 'waterfront';
-  else if (/mall|shopping|arcade|plaza|market|shop/i.test(n)) autoCategory = 'shopping';
+  else if (/bridge|wharf|ferry|port|harbour|harbor|marina|waterfront|river/i.test(n)) autoCategory = 'waterfront';
+  else if (/mall|shopping|arcade|plaza|market|shop|casino/i.test(n)) autoCategory = 'shopping';
   else if (/suburb|valley|village|district|quarter|neighbourhood|neighborhood/i.test(n)) autoCategory = 'neighbourhood';
   else autoCategory = 'heritage';
 
