@@ -1611,6 +1611,22 @@ async function removeCityPhoto(cityId, field) {
   render();
 }
 
+async function saveCityDescription(cityId) {
+  const desc = document.getElementById('city-desc-input')?.value.trim() || null;
+  const url  = document.getElementById('wiki-url-input')?.value.trim() || null;
+  await sb.from('cities').update({ description: desc, wikipedia_url: url }).eq('id', cityId);
+  // Refresh display
+  const area = document.getElementById('wiki-summary-area');
+  if (!area) return;
+  if (desc) {
+    area.innerHTML = `
+      <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:10px;text-align:justify;">${desc}</div>
+      ${url ? `<a href="${url}" target="_blank" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:600;">📖 Read more on Wikipedia ↗</a>` : ''}`;
+  } else if (url) {
+    loadWikiSummary(url);
+  }
+}
+
 async function saveWikiUrl(cityId) {
   const url = document.getElementById('wiki-url-input')?.value.trim();
   if (!url) return;
@@ -4364,12 +4380,18 @@ async function render() {
     const wikiUrl = cityData.wikipedia_url || '';
     const wikiField = `<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0;">
       <div id="wiki-summary-area" style="flex:1;overflow:hidden;"></div>
-      <div class="admin-only" style="margin-top:10px;display:flex;align-items:center;gap:8px;">
-        <input id="wiki-url-input" type="text" value="${wikiUrl}"
-          placeholder="Paste Wikipedia URL (e.g. https://en.wikipedia.org/wiki/Brisbane)"
-          style="flex:1;padding:10px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none;"
-          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
-        <button onclick="saveWikiUrl(${cityData.id})" style="padding:10px 16px;font-size:13px;font-weight:600;border:none;border-radius:8px;background:var(--blue);color:#fff;cursor:pointer;white-space:nowrap;">Save</button>
+      <div class="admin-only" style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+        <textarea id="city-desc-input" rows="3"
+          placeholder="City description (shown instead of Wikipedia)..."
+          style="width:100%;padding:10px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none;resize:vertical;"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">${cityData.description || ''}</textarea>
+        <div style="display:flex;gap:8px;">
+          <input id="wiki-url-input" type="text" value="${wikiUrl}"
+            placeholder="Wikipedia URL (optional, shown as Read more link)"
+            style="flex:1;padding:10px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none;"
+            onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
+          <button onclick="saveCityDescription(${cityData.id})" style="padding:10px 16px;font-size:13px;font-weight:600;border:none;border-radius:8px;background:var(--blue);color:#fff;cursor:pointer;white-space:nowrap;">Save</button>
+        </div>
       </div>
     </div>`;
 
@@ -4408,7 +4430,15 @@ async function render() {
     window._cityTabData = { city: cityData, country, tourism, cs, activities };
 
     // Load Wikipedia summary if URL exists
-    if (wikiUrl) loadWikiSummary(wikiUrl);
+    // Show description from DB first, fallback to Wikipedia
+    const wikiArea = document.getElementById('wiki-summary-area');
+    if (cityData.description) {
+      if (wikiArea) wikiArea.innerHTML = `
+        <div style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:10px;text-align:justify;">${cityData.description}</div>
+        ${wikiUrl ? `<a href="${wikiUrl}" target="_blank" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:600;">📖 Read more on Wikipedia ↗</a>` : ''}`;
+    } else if (wikiUrl) {
+      loadWikiSummary(wikiUrl);
+    }
 
     // Load landmark count immediately
     sb.from('landmarks').select('id, visited').eq('city_id', cityData.id).then(({ data: lms }) => {
