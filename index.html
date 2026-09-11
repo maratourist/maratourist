@@ -1956,27 +1956,66 @@ function renderLandmarksGrid(city) {
   const bar = document.getElementById('landmark-bar');
   if (bar) bar.style.width = (total > 0 ? (visited/total*100) : 0) + '%';
 
-  grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
-    ${landmarks.map(lm => {
-      const bg = lm.visited ? '#16a34a' : 'var(--card)';
-      const color = lm.visited ? '#fff' : 'var(--text)';
-      const border = lm.visited ? '#16a34a' : 'var(--border)';
-      const mutedColor = lm.visited ? 'rgba(255,255,255,0.8)' : 'var(--muted)';
-      return `
-      <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);transition:all 0.15s;display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:13px;font-weight:700;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${lm.name}</div>
-        ${lm.description ? `<div style="font-size:11px;color:${lm.visited ? 'rgba(255,255,255,0.85)' : 'var(--muted)'};line-height:1.4;text-align:justify;">${lm.description}</div>` : ''}
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div>${lm.wikipedia_url ? `<a href="${lm.wikipedia_url}" target="_blank" style="font-size:11px;color:${mutedColor};text-decoration:none;font-weight:600;">📖 Wikipedia ↗</a>` : ''}</div>
-          <div class="admin-only" style="display:flex;gap:4px;">
-            <button onclick="toggleLandmarkVisited(${lm.id},${lm.visited ? 'false' : 'true'},${city.id})" style="background:none;border:none;cursor:pointer;font-size:12px;" title="${lm.visited ? 'Mark unvisited' : 'Mark visited'}">${lm.visited ? '✅' : '⬜'}</button>
-            <button onclick="openLandmarkEditForm(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:12px;">✏️</button>
-            <button onclick="deleteLandmark(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:12px;color:${lm.visited ? 'rgba(255,255,255,0.8)' : '#d03030'};">🗑</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
+  const CATEGORIES = {
+    heritage:     { icon: '🏛️', label: 'Patrimônio Histórico' },
+    culture:      { icon: '🎨', label: 'Arte & Cultura' },
+    nature:       { icon: '🌿', label: 'Natureza & Parques' },
+    religion:     { icon: '⛪', label: 'Religioso' },
+    sports:       { icon: '🏟️', label: 'Esportes' },
+    waterfront:   { icon: '🚢', label: 'Beira-rio' },
+    shopping:     { icon: '🛍️', label: 'Compras & Entretenimento' },
+    neighbourhood:{ icon: '🏘️', label: 'Bairros' },
+    other:        { icon: '📍', label: 'Outros' },
+  };
+
+  // Group by category
+  const grouped = {};
+  landmarks.forEach(lm => {
+    const cat = lm.category || 'other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(lm);
+  });
+
+  // Sort categories by order defined above
+  const catOrder = Object.keys(CATEGORIES);
+  const sortedCats = Object.keys(grouped).sort((a, b) => {
+    return (catOrder.indexOf(a) ?? 99) - (catOrder.indexOf(b) ?? 99);
+  });
+
+  let html = '';
+  sortedCats.forEach(cat => {
+    const meta = CATEGORIES[cat] || CATEGORIES.other;
+    const items = grouped[cat];
+    html += `<div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+        <span style="font-size:16px;">${meta.icon}</span>
+        <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">${meta.label}</span>
+        <span style="font-size:11px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:99px;border:1px solid var(--border);">${items.length}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+        ${items.map(lm => {
+          const bg = lm.visited ? '#16a34a' : 'var(--card)';
+          const color = lm.visited ? '#fff' : 'var(--text)';
+          const border = lm.visited ? '#16a34a' : 'var(--border)';
+          const mutedColor = lm.visited ? 'rgba(255,255,255,0.8)' : 'var(--muted)';
+          return `<div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);transition:all 0.15s;display:flex;flex-direction:column;gap:6px;">
+            <div style="font-size:13px;font-weight:700;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${lm.name}</div>
+            ${lm.description ? `<div style="font-size:11px;color:${lm.visited ? 'rgba(255,255,255,0.85)' : 'var(--muted)'};line-height:1.4;text-align:justify;">${lm.description}</div>` : ''}
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
+              <div>${lm.wikipedia_url ? `<a href="${lm.wikipedia_url}" target="_blank" style="font-size:11px;color:${mutedColor};text-decoration:none;font-weight:600;">📖 Wikipedia ↗</a>` : ''}</div>
+              <div class="admin-only" style="display:flex;gap:4px;">
+                <button onclick="toggleLandmarkVisited(${lm.id},${lm.visited ? 'false' : 'true'},${city.id})" style="background:none;border:none;cursor:pointer;font-size:12px;" title="${lm.visited ? 'Mark unvisited' : 'Mark visited'}">${lm.visited ? '✅' : '⬜'}</button>
+                <button onclick="openLandmarkEditForm(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:12px;">✏️</button>
+                <button onclick="deleteLandmark(${lm.id},${city.id})" style="background:none;border:none;cursor:pointer;font-size:12px;color:${lm.visited ? 'rgba(255,255,255,0.8)' : '#d03030'};">🗑</button>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  grid.innerHTML = html;
 }
 
 async function toggleLandmarkVisited(landmarkId, visited, cityId) {
@@ -2018,20 +2057,42 @@ async function submitLandmarkForm(cityId) {
   btn.disabled = true; btn.textContent = 'Saving...';
 
   const wikiUrl = document.getElementById('lm-wiki')?.value.trim() || null;
-  let lat = null, lng = null;
+  let lat = null, lng = null, autoDesc = null, autoCategory = null;
+
+  // Auto-fetch from Wikipedia
   if (wikiUrl) {
     try {
       const title = decodeURIComponent(wikiUrl.split('/wiki/')[1] || '');
-      const r = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=coordinates&titles=${encodeURIComponent(title)}&format=json&origin=*`);
-      const d = await r.json();
-      const pages = d.query.pages;
-      const page = pages[Object.keys(pages)[0]];
-      if (page?.coordinates?.[0]) { lat = page.coordinates[0].lat; lng = page.coordinates[0].lon; }
+      const [coordResp] = await Promise.all([
+        fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=coordinates&titles=${encodeURIComponent(title)}&format=json&origin=*`)
+      ]);
+      const coordData = await coordResp.json();
+      const extractData = await extractResp.json();
+
+      const coordPage = Object.values(coordData.query.pages)[0];
+      if (coordPage?.coordinates?.[0]) {
+        lat = coordPage.coordinates[0].lat;
+        lng = coordPage.coordinates[0].lon;
+      }
     } catch(e) {}
   }
 
+  // Auto-categorize based on name keywords
+  const n = name.toLowerCase();
+  if (/church|cathedral|chapel|temple|mosque|synagogue|pagoda|monastery/i.test(n)) autoCategory = 'religion';
+  else if (/museum|gallery|theatre|theater|library|planetarium|powerhouse|arts|opera/i.test(n)) autoCategory = 'culture';
+  else if (/park|garden|zoo|sanctuary|national park|nature|reserve|forest|mountain|mount|cliff|beach/i.test(n)) autoCategory = 'nature';
+  else if (/stadium|arena|tennis|cricket|football|sports|centre|center/i.test(n)) autoCategory = 'sports';
+  else if (/bridge|wharf|ferry|port|harbour|harbor|marina|waterfront|river|bay/i.test(n)) autoCategory = 'waterfront';
+  else if (/mall|shopping|arcade|plaza|market|shop/i.test(n)) autoCategory = 'shopping';
+  else if (/suburb|valley|village|district|quarter|neighbourhood|neighborhood/i.test(n)) autoCategory = 'neighbourhood';
+  else autoCategory = 'heritage';
+
   const { error } = await sb.from('landmarks').insert({
-    city_id: cityId, name, wikipedia_url: wikiUrl, latitude: lat, longitude: lng,
+    city_id: cityId, name,
+    wikipedia_url: wikiUrl,
+    latitude: lat, longitude: lng,
+    category: autoCategory,
   });
 
   if (error) { err.innerHTML = `<div class="form-error">${error.message}</div>`; btn.disabled = false; btn.textContent = 'Save Landmark'; return; }
