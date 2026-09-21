@@ -4672,8 +4672,8 @@ function renderParkrunStatsPanel(rows) {
     });
   });
 
-  // ── All results flat (for distributions) ──
-  const allResultsFlat = doneRows.flatMap(row => row.allResults || [row.result]);
+  // Each doneRow is already one individual result now
+  const allResultsFlat = doneRows.map(row => row.result).filter(Boolean);
 
   // ── Time distribution: floor(mins) so 24:09 → 24 ──
   const timeBuckets = new Map([['23',0],['24',0],['25',0],['26',0],['27',0],['28',0],['29',0],['30+',0]]);
