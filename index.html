@@ -4599,16 +4599,15 @@ async function renderParkrunTable({ cityId = null } = {}) {
     const countryName = loc.cities ? countryNames[loc.cities.country_id] : '';
 
     if (locResults.length === 0) {
-      rows.push({ done: false, loc, cityName, stateName, countryName, result: null });
+      rows.push({ done: false, loc, cityName, stateName, countryName, result: null, allResults: [] });
     } else {
-      // Use best result (fastest finish_time); fall back to most recent if no time
       function toSecsLocal(t) {
         if (!t) return Infinity;
         const p = t.split(':').map(Number);
         return p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p[0]*60+p[1];
       }
       const best = locResults.reduce((b, r) => toSecsLocal(r.finish_time) < toSecsLocal(b.finish_time) ? r : b);
-      rows.push({ done: true, loc, cityName, stateName, countryName, result: best, runCount: locResults.length });
+      rows.push({ done: true, loc, cityName, stateName, countryName, result: best, allResults: locResults, runCount: locResults.length });
     }
   });
 
@@ -4669,10 +4668,13 @@ function renderParkrunStatsPanel(rows) {
     });
   });
 
+  // ── All results flat (for distributions) ──
+  const allResultsFlat = doneRows.flatMap(row => row.allResults || [row.result]);
+
   // ── Time distribution: floor(mins) so 24:09 → 24 ──
   const timeBuckets = new Map([['23',0],['24',0],['25',0],['26',0],['27',0],['28',0],['29',0],['30+',0]]);
-  doneRows.forEach(row => {
-    const t = row.result.finish_time; if (!t) return;
+  allResultsFlat.forEach(r => {
+    const t = r.finish_time; if (!t) return;
     const p = t.split(':').map(Number);
     const floorMins = p[0];
     if (floorMins <= 23)       timeBuckets.set('23', timeBuckets.get('23')+1);
@@ -4687,13 +4689,12 @@ function renderParkrunStatsPanel(rows) {
 
   // ── Km pace distribution: floor(mins) so 4:59 → bucket 4 ──
   const kmBuckets = { '4': 0, '5': 0, '6': 0, '7': 0, '8+': 0 };
-  doneRows.forEach(row => {
-    const r = row.result;
+  allResultsFlat.forEach(r => {
     ['km1_time','km2_time','km3_time','km4_time','km5_time'].forEach(k => {
       const t = r[k]; if (!t) return;
       const p = t.split(':').map(Number);
       const floorMins = p[0];
-      if (floorMins <= 4)     kmBuckets['4']++;
+      if (floorMins <= 4)       kmBuckets['4']++;
       else if (floorMins === 5) kmBuckets['5']++;
       else if (floorMins === 6) kmBuckets['6']++;
       else if (floorMins === 7) kmBuckets['7']++;
@@ -4793,7 +4794,7 @@ function renderParkrunStatsPanel(rows) {
         <div class="pk-mini-table-title">Km Pace Distribution (min/km)</div>
         <table class="pk-mini-table">
           <thead><tr>${Object.keys(kmBuckets).map(k => `<th>${k}min/km</th>`).join('')}<th style="color:var(--blue)">Total</th></tr></thead>
-          <tbody><tr>${Object.values(kmBuckets).map(v => `<td>${v}</td>`).join('')}<td style="color:var(--blue)">${completedCount * 5}</td></tr></tbody>
+          <tbody><tr>${Object.values(kmBuckets).map(v => `<td>${v}</td>`).join('')}<td style="color:var(--blue)">${allResultsFlat.length * 5}</td></tr></tbody>
         </table>
       </div>
     </div>
