@@ -4607,7 +4607,11 @@ async function renderParkrunTable({ cityId = null } = {}) {
         return p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p[0]*60+p[1];
       }
       const best = locResults.reduce((b, r) => toSecsLocal(r.finish_time) < toSecsLocal(b.finish_time) ? r : b);
-      rows.push({ done: true, loc, cityName, stateName, countryName, result: best, allResults: locResults, runCount: locResults.length });
+      // One row per result, sorted by date desc
+      locResults.sort((a, b) => (b.run_date || '').localeCompare(a.run_date || ''));
+      locResults.forEach((result, idx) => {
+        rows.push({ done: true, loc, cityName, stateName, countryName, result, allResults: locResults, runCount: locResults.length, isBest: result === best, isFirst: idx === 0 });
+      });
     }
   });
 
@@ -4629,10 +4633,10 @@ function renderParkrunStatsPanel(rows) {
   const panel = document.getElementById('pk-stats-panel');
   if (!panel) return;
 
-  const totalLocations = rows.length;
+  const totalLocations = new Set(rows.filter(r => r.done).map(r => r.loc.id)).size + rows.filter(r => !r.done).length;
   const doneRows       = rows.filter(r => r.done);
-  const completedCount = doneRows.length;
-  const pendingCount   = totalLocations - completedCount;
+  const completedCount = new Set(doneRows.map(r => r.loc.id)).size;
+  const pendingCount   = rows.filter(r => !r.done).length;
   const pctDone        = totalLocations > 0 ? ((completedCount / totalLocations) * 100).toFixed(2) : '0.00';
 
   function toSecs(t) {
@@ -4702,7 +4706,7 @@ function renderParkrunStatsPanel(rows) {
     });
   });
 
-  // ── State breakdown sorted by % done desc ──
+  // ── State breakdown — unique locations per state ──
   const stateLocMap = {}, stateDoneLocMap = {};
   rows.forEach(row => {
     const s = row.stateName || '—';
