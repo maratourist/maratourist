@@ -1472,6 +1472,7 @@
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
       <button onclick="goGlobalHalfMarathons()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--run)';this.style.color='var(--run)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏅 All Half Marathons</button>
       <button onclick="goGlobalParkruns()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--parkrun)';this.style.color='var(--parkrun)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏃 All Parkruns</button>
+      <button onclick="goExpeditions()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='#8b5cf6';this.style.color='#8b5cf6'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🧭 Expeditions</button>
     </div>
     <div id="sidebar-regions" style="display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px;">Regions</div>
@@ -3871,6 +3872,366 @@ function openHollyModal() {
   `);
 }
 
+// ════════════════════════════════════════
+// EXPEDITIONS
+// ════════════════════════════════════════
+const EXPEDITION_STATUS = {
+  idea:        { label: 'Idea',        icon: '💭', color: '#94a3b8' },
+  planning:    { label: 'Planning',    icon: '📋', color: '#f59e0b' },
+  inprogress:  { label: 'In Progress', icon: '🚀', color: '#16a34a' },
+  completed:   { label: 'Completed',   icon: '✅', color: '#2a78d6' },
+};
+
+function goExpeditions() {
+  go('expeditions');
+}
+
+async function renderExpeditionsPage() {
+  const main = document.getElementById('main');
+  updateBreadcrumb({ expeditions: true });
+  main.innerHTML = `
+    <div class="page-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="page-title">🧭 Expeditions</div>
+          <div class="page-subtitle">Dreams, plans and adventures around the world</div>
+        </div>
+        <button class="admin-only action-btn" style="background:#8b5cf6;" onclick="openExpeditionForm()">+ New Expedition</button>
+      </div>
+    </div>
+    <div id="expeditions-list">Loading...</div>`;
+
+  const { data: expeditions } = await sb.from('expeditions')
+    .select('*').order('created_at', { ascending: false });
+
+  const list = document.getElementById('expeditions-list');
+  if (!expeditions?.length) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon">🧭</div><div class="es-text">No expeditions yet. Dream big!</div></div>';
+    return;
+  }
+
+  // Group by status
+  const grouped = {};
+  Object.keys(EXPEDITION_STATUS).forEach(s => grouped[s] = []);
+  expeditions.forEach(e => { const s = e.status || 'idea'; if (!grouped[s]) grouped[s] = []; grouped[s].push(e); });
+
+  let html = '';
+  Object.entries(EXPEDITION_STATUS).forEach(([key, meta]) => {
+    if (!grouped[key]?.length) return;
+    html += `<div style="margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:18px;">${meta.icon}</span>
+        <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">${meta.label}</span>
+        <span style="font-size:11px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:99px;border:1px solid var(--border);">${grouped[key].length}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">
+        ${grouped[key].map(e => `
+          <div onclick="go('expedition',${e.id})" style="background:var(--card);border:1.5px solid var(--border);border-left:4px solid ${meta.color};border-radius:12px;padding:18px;cursor:pointer;transition:all 0.15s;box-shadow:var(--shadow);"
+            onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='${meta.color}'"
+            onmouseout="this.style.transform='';this.style.borderColor='var(--border)';this.style.borderLeftColor='${meta.color}'">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;">${e.name}</div>
+            ${e.description ? `<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${e.description}</div>` : ''}
+            <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);">
+              ${e.estimated_start ? `<span>📅 ${e.estimated_start}</span>` : ''}
+              ${e.estimated_end ? `<span>→ ${e.estimated_end}</span>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+async function renderExpeditionDetail(id) {
+  const main = document.getElementById('main');
+  main.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">Loading...</div>';
+
+  const [{ data: exp }, { data: cities }] = await Promise.all([
+    sb.from('expeditions').select('*').eq('id', id).single(),
+    sb.from('expedition_cities').select('*').eq('expedition_id', id).order('sort_order'),
+  ]);
+  await loadAllStats();
+
+  if (!exp) { main.innerHTML = '<div class="empty-state"><div class="es-icon">🧭</div><div class="es-text">Expedition not found.</div></div>'; return; }
+
+  const meta = EXPEDITION_STATUS[exp.status] || EXPEDITION_STATUS.idea;
+  updateBreadcrumb({ expeditions: true, expedition: exp });
+
+  main.innerHTML = `
+    <div class="back-btn" onclick="goExpeditions()">‹ Back to Expeditions</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:var(--text);">${exp.name}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+          <span style="background:${meta.color};color:#fff;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;">${meta.icon} ${meta.label}</span>
+          ${exp.estimated_start ? `<span style="font-size:12px;color:var(--muted);">📅 ${exp.estimated_start}${exp.estimated_end ? ' → ' + exp.estimated_end : ''}</span>` : ''}
+          ${exp.actual_start ? `<span style="font-size:12px;color:var(--muted);">✈️ ${exp.actual_start}${exp.actual_end ? ' → ' + exp.actual_end : ''}</span>` : ''}
+        </div>
+      </div>
+      <div class="admin-only" style="display:flex;gap:8px;">
+        <button onclick="openExpeditionForm(${exp.id})" style="padding:8px 14px;font-size:12px;font-weight:600;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--muted);cursor:pointer;">✏️ Edit</button>
+        <button onclick="deleteExpedition(${exp.id})" style="padding:8px 14px;font-size:12px;font-weight:600;border:1.5px solid #fca5a5;border-radius:8px;background:var(--card);color:#d03030;cursor:pointer;">🗑 Delete</button>
+      </div>
+    </div>
+
+    ${exp.description ? `<div style="font-size:14px;line-height:1.8;color:var(--text);margin-bottom:20px;padding:18px;background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:justify;">${exp.description}</div>` : ''}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">📍 Route Cities</div>
+          <button class="admin-only" onclick="openAddCityForm(${exp.id})" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;">+ Add City</button>
+        </div>
+        <div id="expedition-cities-list">
+          ${cities?.length ? cities.map((c, i) => {
+            const cs = cityStats[c.city_id] || {};
+            return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="navigateToCity(null,${c.city_id})">
+                <span style="font-size:11px;color:var(--muted);width:20px;text-align:center;font-weight:700;">${i+1}</span>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--blue);">${c.city_name}${c.country_name ? ` <span style="font-size:11px;font-weight:400;color:var(--muted);">— ${c.country_name}</span>` : ''}</div>
+                  <div style="display:flex;gap:8px;margin-top:3px;">
+                    ${cs.hmTotal > 0 ? `<span style="font-size:10px;color:var(--run);">🏅 ${cs.hm}/${cs.hmTotal}</span>` : ''}
+                    ${cs.pkTotal > 0 ? `<span style="font-size:10px;color:var(--parkrun);">🏃 ${cs.pk}/${cs.pkTotal}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+              <button class="admin-only" onclick="removeExpeditionCity(${c.id},${exp.id})" style="background:none;border:none;cursor:pointer;color:#d03030;font-size:12px;">🗑</button>
+            </div>`;
+          }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">No cities yet — add cities to build your route</div>'}
+        </div>
+      </div>
+
+      <div id="expedition-map" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);min-height:300px;background:var(--card);">
+        <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>
+      </div>
+    </div>`;
+
+  window._currentExpedition = exp;
+  renderExpeditionMap(cities || []);
+}
+
+async function renderExpeditionMap(cities) {
+  const container = document.getElementById('expedition-map');
+  if (!container) return;
+
+  if (!document.getElementById('leaflet-css')) {
+    const link = document.createElement('link');
+    link.id = 'leaflet-css'; link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(link);
+  }
+  if (!window.L) {
+    await new Promise(resolve => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      s.onload = resolve; document.head.appendChild(s);
+    });
+  }
+
+  const withCoords = cities.filter(c => c.latitude && c.longitude);
+  container.innerHTML = '';
+  const map = L.map(container, { center: [20, 10], zoom: 2 });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 19
+  }).addTo(map);
+
+  if (withCoords.length) {
+    const markers = withCoords.map((c, i) => {
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="background:#8b5cf6;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${i+1}</div>`,
+        iconSize: [24, 24], iconAnchor: [12, 12],
+      });
+      return L.marker([c.latitude, c.longitude], { icon }).addTo(map)
+        .bindPopup(`<div style="font-weight:700;">${c.city_name}</div>${c.country_name ? `<div style="font-size:11px;color:#666;">${c.country_name}</div>` : ''}`);
+    });
+
+    // Draw route line
+    if (withCoords.length > 1) {
+      L.polyline(withCoords.map(c => [c.latitude, c.longitude]), {
+        color: '#8b5cf6', weight: 2, opacity: 0.7, dashArray: '6,6'
+      }).addTo(map);
+    }
+
+    const group = L.featureGroup(markers);
+    map.fitBounds(group.getBounds(), { padding: [30, 30], maxZoom: 8 });
+  }
+}
+
+function openExpeditionForm(id = null) {
+  const exp = id ? window._currentExpedition : null;
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">${id ? '✏️ Edit Expedition' : '🧭 New Expedition'}</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="exp-form-error"></div>
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="exp-name" value="${exp?.name || ''}" placeholder="e.g. Ring Road Australia">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description <span class="optional">(optional)</span></label>
+        <textarea class="form-input" id="exp-desc" rows="4" placeholder="Describe your expedition idea...">${exp?.description || ''}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-input" id="exp-status">
+          ${Object.entries(EXPEDITION_STATUS).map(([k, v]) => `<option value="${k}" ${(exp?.status||'idea')===k?'selected':''}>${v.icon} ${v.label}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Estimated Start</label>
+          <input class="form-input" id="exp-est-start" value="${exp?.estimated_start || ''}" placeholder="e.g. 2027, Jan 2028">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estimated End</label>
+          <input class="form-input" id="exp-est-end" value="${exp?.estimated_end || ''}" placeholder="e.g. Dec 2027">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Actual Start <span class="optional">(optional)</span></label>
+          <input class="form-input" id="exp-act-start" type="date" value="${exp?.actual_start || ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Actual End <span class="optional">(optional)</span></label>
+          <input class="form-input" id="exp-act-end" type="date" value="${exp?.actual_end || ''}">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="exp-save-btn" onclick="submitExpeditionForm(${id || 'null'})">${id ? 'Save Changes' : 'Create Expedition'}</button>
+    </div>`);
+}
+
+async function submitExpeditionForm(id) {
+  const name = document.getElementById('exp-name')?.value.trim();
+  const btn = document.getElementById('exp-save-btn');
+  const err = document.getElementById('exp-form-error');
+  if (!name) { err.innerHTML = '<div class="form-error">Name is required.</div>'; return; }
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const data = {
+    name,
+    description: document.getElementById('exp-desc')?.value.trim() || null,
+    status: document.getElementById('exp-status')?.value || 'idea',
+    estimated_start: document.getElementById('exp-est-start')?.value.trim() || null,
+    estimated_end: document.getElementById('exp-est-end')?.value.trim() || null,
+    actual_start: document.getElementById('exp-act-start')?.value || null,
+    actual_end: document.getElementById('exp-act-end')?.value || null,
+  };
+
+  let error;
+  if (id) {
+    ({ error } = await sb.from('expeditions').update(data).eq('id', id));
+  } else {
+    ({ error } = await sb.from('expeditions').insert(data));
+  }
+
+  if (error) { err.innerHTML = `<div class="form-error">${error.message}</div>`; btn.disabled = false; btn.textContent = 'Save'; return; }
+  closeModal();
+  if (id) renderExpeditionDetail(id);
+  else renderExpeditionsPage();
+}
+
+async function deleteExpedition(id) {
+  if (!confirm('Delete this expedition?')) return;
+  await sb.from('expeditions').delete().eq('id', id);
+  goExpeditions();
+}
+
+function openAddCityForm(expeditionId) {
+  // Load all cities with country info
+  sb.from('cities').select('id, name, state, country_id, countries(id, name, flag_emoji)').order('name').then(({ data: cities }) => {
+    const options = (cities || []).map(c =>
+      `<option value="${c.id}" data-lat="${c.latitude || ''}" data-lng="${c.longitude || ''}" data-country="${c.countries?.name || ''}" data-flag="${c.countries?.flag_emoji || ''}">
+        ${c.countries?.flag_emoji || ''} ${c.name}${c.state ? ', ' + c.state : ''} — ${c.countries?.name || ''}
+      </option>`
+    ).join('');
+
+    showModal(`
+      <div class="modal-header">
+        <div class="modal-title">📍 Add City to Route</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="add-city-error"></div>
+        <div class="form-group">
+          <label class="form-label">Search & Select City</label>
+          <input type="text" id="exc-search" placeholder="Type to filter cities..."
+            oninput="filterExpeditionCitySelect()"
+            style="width:100%;padding:10px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none;margin-bottom:8px;"
+            onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
+          <select id="exc-city-select" size="8"
+            style="width:100%;padding:8px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);">
+            ${options}
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" id="exc-save-btn" onclick="submitAddCity(${expeditionId})">Add to Route</button>
+      </div>`);
+
+    window._expeditionCityOptions = cities || [];
+  });
+}
+
+function filterExpeditionCitySelect() {
+  const q = document.getElementById('exc-search')?.value.toLowerCase().trim() || '';
+  const select = document.getElementById('exc-city-select');
+  if (!select) return;
+  const cities = window._expeditionCityOptions || [];
+  select.innerHTML = cities
+    .filter(c => !q ||
+      c.name.toLowerCase().includes(q) ||
+      (c.state || '').toLowerCase().includes(q) ||
+      (c.countries?.name || '').toLowerCase().includes(q))
+    .map(c => `<option value="${c.id}">
+      ${c.countries?.flag_emoji || ''} ${c.name}${c.state ? ', ' + c.state : ''} — ${c.countries?.name || ''}
+    </option>`).join('');
+}
+
+async function submitAddCity(expeditionId) {
+  const select = document.getElementById('exc-city-select');
+  const cityId = parseInt(select?.value);
+  if (!cityId) return;
+  const btn = document.getElementById('exc-save-btn');
+  btn.disabled = true; btn.textContent = 'Adding...';
+
+  const city = (window._expeditionCityOptions || []).find(c => c.id === cityId);
+
+  // Count existing to set sort_order
+  const { count } = await sb.from('expedition_cities')
+    .select('id', { count: 'exact', head: true })
+    .eq('expedition_id', expeditionId);
+
+  await sb.from('expedition_cities').insert({
+    expedition_id: expeditionId,
+    city_id: cityId,
+    city_name: city?.name || '',
+    country_name: city?.countries?.name || '',
+    latitude: city?.latitude || null,
+    longitude: city?.longitude || null,
+    sort_order: count || 0,
+  });
+
+  closeModal();
+  renderExpeditionDetail(expeditionId);
+}
+
+async function removeExpeditionCity(cityId, expeditionId) {
+  await sb.from('expedition_cities').delete().eq('id', cityId);
+  renderExpeditionDetail(expeditionId);
+}
+
 async function loadHeaderStats() {
   const [
     { data: allCountries },
@@ -3923,12 +4284,14 @@ async function loadHeaderStats() {
 }
 
 function go(level, val) {
-  if (level === 'home')     state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:null };
-  if (level === 'region')   state = { region:val, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:null };
-  if (level === 'country')  { state.country = val; state.city=null; state.category=null; state.sub=null; state.parkrunLocation=null; state.globalView=null; }
-  if (level === 'city')     { state.city = val; state.category=null; state.sub=null; state.parkrunLocation=null; }
-  if (level === 'category') { state.category = val; state.sub=null; state.parkrunLocation=null; }
-  if (level === 'sub')      { state.sub = val; state.parkrunLocation=null; }
+  if (level === 'home')       state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:null };
+  if (level === 'region')     state = { region:val, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:null };
+  if (level === 'country')    { state.country = val; state.city=null; state.category=null; state.sub=null; state.parkrunLocation=null; state.globalView=null; }
+  if (level === 'city')       { state.city = val; state.category=null; state.sub=null; state.parkrunLocation=null; }
+  if (level === 'category')   { state.category = val; state.sub=null; state.parkrunLocation=null; }
+  if (level === 'sub')        { state.sub = val; state.parkrunLocation=null; }
+  if (level === 'expeditions') state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:'expeditions' };
+  if (level === 'expedition')  state = { region:null, country:null, city:null, category:null, sub:null, parkrunLocation:null, globalView:'expedition', expeditionId: val };
   render();
 }
 
@@ -3960,6 +4323,15 @@ function countriesInRegion(id) { return countriesCache.filter(c => c.region === 
 function updateBreadcrumb(ctx) {
   const bc = document.getElementById('breadcrumb');
   let parts = [`<span onclick="go('home')">World</span>`];
+  if (state.globalView === 'expeditions') {
+    parts.push(`<span class="sep">›</span><span class="current">Expeditions</span>`);
+    bc.innerHTML = parts.join(''); return;
+  }
+  if (state.globalView === 'expedition') {
+    parts.push(`<span class="sep">›</span><span onclick="go('expeditions')">Expeditions</span>`);
+    if (ctx.expedition) parts.push(`<span class="sep">›</span><span class="current">${ctx.expedition.name}</span>`);
+    bc.innerHTML = parts.join(''); return;
+  }
   if (state.globalView === 'parkruns') {
     parts.push(`<span class="sep">›</span><span class="current">All Parkruns</span>`);
     bc.innerHTML = parts.join(''); return;
@@ -4056,6 +4428,17 @@ async function render() {
       + '</div>'
       + '<div id="cities-container">Loading...</div>';
     renderAllCities();
+    return;
+  }
+
+  // GLOBAL VIEW: Expeditions
+  if (state.globalView === 'expeditions') {
+    await renderExpeditionsPage();
+    return;
+  }
+
+  if (state.globalView === 'expedition' && state.expeditionId) {
+    await renderExpeditionDetail(state.expeditionId);
     return;
   }
 
