@@ -1719,6 +1719,11 @@ function isCityVisited(city) {
 }
 let countryStats = {};
 let regionStats = {};
+// A country counts as visited if flagged, or any of its cities is visited (flag, half marathon, parkrun or tourism)
+function isCountryVisited(c) {
+  const cs = countryStats[c.id];
+  return !!(c.visited || (cs && (cs.citiesVisited > 0 || cs.hm > 0 || cs.pk > 0 || cs.tourism > 0)));
+}
 
 async function loadRegionsAndCountries() {
   if (regionsCache && countriesCache) return;
@@ -3184,9 +3189,7 @@ function buildVisitedIds() {
   const ids = new Set();
   if (!countriesCache) return ids;
   countriesCache.forEach(c => {
-    const cs = countryStats[c.id];
-    const isVisited = c.visited || (cs && (cs.hm > 0 || cs.pk > 0));
-    if (!isVisited) return;
+    if (!isCountryVisited(c)) return;
     if (c.map_id) { ids.add(String(c.map_id)); return; }
     const atlasId = NAME_TO_ATLAS[c.name?.toLowerCase()];
     if (atlasId) { ids.add(String(atlasId)); return; }
@@ -3194,7 +3197,7 @@ function buildVisitedIds() {
     if (c.name === 'Australia') ids.add('36');
     if (c.name === 'Brazil') ids.add('76');
   });
-  console.log('[Map] visitedIds:', [...ids], 'countries with activity:', countriesCache.filter(c => { const cs = countryStats[c.id]; return c.visited || (cs && (cs.hm > 0 || cs.pk > 0)); }).map(c => c.name));
+  console.log('[Map] visitedIds:', [...ids], 'countries with activity:', countriesCache.filter(isCountryVisited).map(c => c.name));
   return ids;
 }
 
@@ -3205,31 +3208,18 @@ function loadWorldMap() {
   async function renderMap() {
     const visitedIds = new Set();
 
-    const [{ data: hmRaces }, { data: pkLocs }] = await Promise.all([
-      sb.from('half_marathon_results').select('half_marathon_races!inner(city_id)'),
-      sb.from('parkrun_results').select('parkrun_locations!inner(city_id)')
-    ]);
-
-    const cityIds = new Set();
-    (hmRaces || []).forEach(r => { if (r.half_marathon_races?.city_id) cityIds.add(r.half_marathon_races.city_id); });
-    (pkLocs  || []).forEach(r => { if (r.parkrun_locations?.city_id)  cityIds.add(r.parkrun_locations.city_id);  });
-
-    if (cityIds.size > 0) {
-      const { data: cityRows } = await sb.from('cities').select('country_id').in('id', [...cityIds]);
-      const countryIds = [...new Set((cityRows||[]).map(c => c.country_id))];
-      if (countryIds.length > 0) {
-        const { data: countries } = await sb.from('countries').select('name, map_id').in('id', countryIds);
-        (countries || []).forEach(c => {
-          let id = c.map_id ? String(c.map_id).padStart(3, '0') : null;
-          if (!id) {
-            const hardcoded = { 'australia': '036', 'brazil': '076', 'united states': '840', 'united kingdom': '826' };
-            id = hardcoded[c.name?.toLowerCase()];
-          }
-          if (!id) { const atlasId = NAME_TO_ATLAS[c.name?.toLowerCase()]; if (atlasId) id = String(atlasId).padStart(3, '0'); }
-          if (id) visitedIds.add(id);
-        });
+    // Same rule as the header counter and country cards (flag, half marathon, parkrun, tourism)
+    await loadRegionsAndCountries();
+    await loadAllStats();
+    (countriesCache || []).filter(isCountryVisited).forEach(c => {
+      let id = c.map_id ? String(c.map_id).padStart(3, '0') : null;
+      if (!id) {
+        const hardcoded = { 'australia': '036', 'brazil': '076', 'united states': '840', 'united kingdom': '826' };
+        id = hardcoded[c.name?.toLowerCase()];
       }
-    }
+      if (!id) { const atlasId = NAME_TO_ATLAS[c.name?.toLowerCase()]; if (atlasId) id = String(atlasId).padStart(3, '0'); }
+      if (id) visitedIds.add(id);
+    });
 
     const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
     const fillVisited = '#16a34a';
@@ -4685,11 +4675,7 @@ async function render() {
         const tags = sidebarRegions.querySelector('div');
         regionsCache.forEach(r => {
           const countriesHere = countriesInRegion(r.id);
-          const visited = countriesHere.filter(c => {
-            if (c.visited) return true;
-            const cs = countryStats[c.id];
-            return cs && (cs.hm > 0 || cs.pk > 0);
-          }).length;
+          const visited = countriesHere.filter(isCountryVisited).length;
           const rs = regionStats[r.id] || {};
           const card = document.createElement('div');
           card.className = 'region-card-compact';
@@ -4713,11 +4699,7 @@ async function render() {
 
     // Calculate country stats for map
     const totalCountries = countriesCache.length;
-    const visitedCountries = countriesCache.filter(c => {
-      if (c.visited) return true;
-      const cs = countryStats[c.id];
-      return cs && (cs.hm > 0 || cs.pk > 0);
-    });
+    const visitedCountries = countriesCache.filter(isCountryVisited);
     const visitedCount = visitedCountries.length;
     const pendingCount = totalCountries - visitedCount;
     const pct = totalCountries > 0 ? ((visitedCount / totalCountries) * 100).toFixed(2) : '0.00';
@@ -4768,11 +4750,7 @@ async function render() {
         </div>`;
       return;
     }
-    const visitedCount = regionCountries.filter(c => {
-      if (c.visited) return true;
-      const cs = countryStats[c.id];
-      return cs && (cs.hm > 0 || cs.pk > 0 || cs.tourism > 0);
-    }).length;
+    const visitedCount = regionCountries.filter(isCountryVisited).length;
     main.innerHTML = `
       <div class="back-btn" onclick="go('home')">‹ Back to World</div>
       <div class="page-header">
@@ -4782,7 +4760,7 @@ async function render() {
       <div class="square-grid">
         ${regionCountries.map((c) => {
           const cs2 = countryStats[c.id] || {};
-          const isVisited = c.visited || cs2.hm > 0 || cs2.pk > 0 || cs2.tourism > 0;
+          const isVisited = isCountryVisited(c);
           const borderStyle = isVisited ? 'border-color:var(--blue);' : 'border-color:var(--border);';
           return `
           <div class="square-card" onclick="go('country',${c.id})" style="${borderStyle}">
