@@ -2240,8 +2240,45 @@ async function renderCityMap(city) {
   }
 }
 
+async function renderCityExpeditionsTab(city) {
+  const container = document.getElementById('city-tab-content');
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">Loading...</div>';
+
+  // Find all expeditions that include this city
+  const { data: expCities } = await sb.from('expedition_cities')
+    .select('expedition_id').eq('city_id', city.id);
+  const expIds = [...new Set((expCities || []).map(e => e.expedition_id))];
+
+  if (!expIds.length) {
+    container.innerHTML = '<div class="empty-state"><div class="es-icon">🧭</div><div class="es-text">This city is not part of any expedition yet.</div></div>';
+    return;
+  }
+
+  const { data: expeditions } = await sb.from('expeditions')
+    .select('*').in('id', expIds).order('created_at', { ascending: false });
+
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+      ${(expeditions || []).map(exp => {
+        const meta = EXPEDITION_STATUS[exp.status] || EXPEDITION_STATUS.idea;
+        return `<div onclick="go('expedition',${exp.id})"
+          style="background:var(--card);border:1.5px solid var(--border);border-left:4px solid ${meta.color};
+          border-radius:12px;padding:16px;cursor:pointer;transition:all 0.15s;"
+          onmouseover="this.style.borderColor='${meta.color}'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.borderLeftColor='${meta.color}'">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="background:${meta.color};color:#fff;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;">${meta.icon} ${meta.label}</span>
+            ${exp.estimated_start ? `<span style="font-size:11px;color:var(--muted);">📅 ${exp.estimated_start}${exp.estimated_end ? ' → ' + exp.estimated_end : ''}</span>` : ''}
+          </div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--text);">${exp.name}</div>
+          ${exp.description ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${exp.description}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
 function showCityTab(tab) {
-  ['halfmarathons','parkruns','landmarks','map'].forEach(t => {
+  ['halfmarathons','parkruns','landmarks','map','expeditions'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.classList.toggle('active', t === tab);
   });
@@ -2278,6 +2315,11 @@ function showCityTab(tab) {
 
   if (tab === 'map') {
     renderCityMap(city);
+    return;
+  }
+
+  if (tab === 'expeditions') {
+    renderCityExpeditionsTab(city);
     return;
   }
 }
@@ -2798,7 +2840,7 @@ function renderCitiesGrid(allCities) {
 
       stateCities.forEach(city => {
         const cs = cityStats[city.id];
-        const visited = cs && (cs.hm > 0 || cs.pk > 0);
+        const visited = (c.visited) || (cs && (cs.hm > 0 || cs.pk > 0));
         const pop = city.population ? 'Pop. ' + city.population.toLocaleString() : '';
         const countryId = city.countries?.id;
         const bg    = visited ? '#16a34a' : 'var(--card)';
@@ -4036,12 +4078,28 @@ function initExpeditionDragSort(expeditionId) {
     });
     row.addEventListener('dragend', async e => {
       row.style.opacity = '1';
-      // Save new order
       const rows = [...list.querySelectorAll('.exp-city-row')];
       await Promise.all(rows.map((r, i) =>
         sb.from('expedition_cities').update({ sort_order: i }).eq('id', parseInt(r.dataset.id))
       ));
-      renderExpeditionMap(window._expeditionCities || []);
+      // Re-fetch cities in new order and re-render map
+      const expId = window._currentExpedition?.id;
+      if (!expId) return;
+      const { data: newCities } = await sb.from('expedition_cities')
+        .select('*').eq('expedition_id', expId).order('sort_order');
+      const cityIds = (newCities || []).map(c => c.city_id).filter(Boolean);
+      let cityCoords = {};
+      if (cityIds.length) {
+        const { data: cityRows } = await sb.from('cities').select('id, latitude, longitude').in('id', cityIds);
+        (cityRows || []).forEach(c => { cityCoords[c.id] = { lat: c.latitude, lng: c.longitude }; });
+      }
+      const enriched = (newCities || []).map(c => ({
+        ...c,
+        latitude: c.latitude || cityCoords[c.city_id]?.lat,
+        longitude: c.longitude || cityCoords[c.city_id]?.lng,
+      }));
+      window._expeditionCities = enriched;
+      renderExpeditionMap(enriched);
     });
     row.addEventListener('dragover', e => {
       e.preventDefault();
@@ -4061,6 +4119,14 @@ async function renderExpeditionMap(cities) {
   const container = document.getElementById('expedition-map');
   if (!container) return;
 
+  // Destroy existing map if any
+  if (container._leaflet_map) {
+    container._leaflet_map.remove();
+    delete container._leaflet_map;
+    delete container._leaflet_id;
+  }
+  container.innerHTML = '';
+
   if (!document.getElementById('leaflet-css')) {
     const link = document.createElement('link');
     link.id = 'leaflet-css'; link.rel = 'stylesheet';
@@ -4078,6 +4144,7 @@ async function renderExpeditionMap(cities) {
   const withCoords = cities.filter(c => c.latitude && c.longitude);
   container.innerHTML = '';
   const map = L.map(container, { center: [20, 10], zoom: 2 });
+  container._leaflet_map = map;
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap', maxZoom: 19
   }).addTo(map);
@@ -4175,6 +4242,18 @@ async function submitExpeditionForm(id) {
   let error;
   if (id) {
     ({ error } = await sb.from('expeditions').update(data).eq('id', id));
+    // If marking as completed, offer to mark cities/countries as visited
+    if (!error && data.status === 'completed') {
+      const expCities = await sb.from('expedition_cities').select('city_id').eq('expedition_id', id);
+      const cityIds = (expCities.data || []).map(c => c.city_id).filter(Boolean);
+      if (cityIds.length && confirm(`Mark all ${cityIds.length} cities and their countries as visited?`)) {
+        await sb.from('cities').update({ visited: true }).in('id', cityIds);
+        // Get country_ids for those cities
+        const { data: cityRows } = await sb.from('cities').select('country_id').in('id', cityIds);
+        const countryIds = [...new Set((cityRows || []).map(c => c.country_id).filter(Boolean))];
+        if (countryIds.length) await sb.from('countries').update({ visited: true }).in('id', countryIds);
+      }
+    }
   } else {
     ({ error } = await sb.from('expeditions').insert(data));
   }
@@ -4917,6 +4996,7 @@ async function render() {
       + '<div class="city-tab" id="tab-parkruns" onclick="showCityTab(\'parkruns\')">🏃 Parkruns</div>'
       + '<div class="city-tab" id="tab-landmarks" onclick="showCityTab(\'landmarks\')">🏛️ Landmarks</div>'
       + '<div class="city-tab" id="tab-map" onclick="showCityTab(\'map\')">🗺️ Map</div>'
+      + '<div class="city-tab" id="tab-expeditions" onclick="showCityTab(\'expeditions\')">🧭 Expeditions</div>'
       + '</div>'
       + '<div id="city-tab-content"></div>';
 
