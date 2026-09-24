@@ -4056,62 +4056,6 @@ function initExpeditionDragSort(expeditionId) {
   });
 }
 
-  if (!exp) { main.innerHTML = '<div class="empty-state"><div class="es-icon">🧭</div><div class="es-text">Expedition not found.</div></div>'; return; }
-
-  const meta = EXPEDITION_STATUS[exp.status] || EXPEDITION_STATUS.idea;
-  updateBreadcrumb({ expeditions: true, expedition: exp });
-
-  main.innerHTML = `
-    <div class="back-btn" onclick="goExpeditions()">‹ Back to Expeditions</div>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
-      <div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:var(--text);">${exp.name}</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
-          <span style="background:${meta.color};color:#fff;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;">${meta.icon} ${meta.label}</span>
-          ${exp.estimated_start ? `<span style="font-size:12px;color:var(--muted);">📅 ${exp.estimated_start}${exp.estimated_end ? ' → ' + exp.estimated_end : ''}</span>` : ''}
-          ${exp.actual_start ? `<span style="font-size:12px;color:var(--muted);">✈️ ${exp.actual_start}${exp.actual_end ? ' → ' + exp.actual_end : ''}</span>` : ''}
-        </div>
-      </div>
-      <div class="admin-only" style="display:flex;gap:8px;">
-        <button onclick="openExpeditionForm(${exp.id})" style="padding:8px 14px;font-size:12px;font-weight:600;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--muted);cursor:pointer;">✏️ Edit</button>
-        <button onclick="deleteExpedition(${exp.id})" style="padding:8px 14px;font-size:12px;font-weight:600;border:1.5px solid #fca5a5;border-radius:8px;background:var(--card);color:#d03030;cursor:pointer;">🗑 Delete</button>
-      </div>
-    </div>
-
-    ${exp.description ? `<div style="font-size:14px;line-height:1.8;color:var(--text);margin-bottom:20px;padding:18px;background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:justify;">${exp.description}</div>` : ''}
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">📍 Route Cities</div>
-          <button class="admin-only" onclick="openAddCityForm(${exp.id})" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;">+ Add City</button>
-        </div>
-        <div id="expedition-cities-list">
-          ${cities?.length ? cities.map((c, i) => {
-            const cs = cityStats[c.city_id] || {};
-            return `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
-              <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="navigateToCity(null,${c.city_id})">
-                <span style="font-size:11px;color:var(--muted);width:20px;text-align:center;font-weight:700;">${i+1}</span>
-                <div>
-                  <div style="font-size:13px;font-weight:700;color:var(--blue);">${c.city_name}${c.country_name ? ` <span style="font-size:11px;font-weight:400;color:var(--muted);">— ${c.country_name}</span>` : ''}</div>
-                  <div style="display:flex;gap:8px;margin-top:3px;">
-                    ${cs.hmTotal > 0 ? `<span style="font-size:10px;color:var(--run);">🏅 ${cs.hm}/${cs.hmTotal}</span>` : ''}
-                    ${cs.pkTotal > 0 ? `<span style="font-size:10px;color:var(--parkrun);">🏃 ${cs.pk}/${cs.pkTotal}</span>` : ''}
-                  </div>
-                </div>
-              </div>
-              <button class="admin-only" onclick="removeExpeditionCity(${c.id},${exp.id})" style="background:none;border:none;cursor:pointer;color:#d03030;font-size:12px;">🗑</button>
-            </div>`;
-          }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">No cities yet — add cities to build your route</div>'}
-        </div>
-      </div>
-
-      <div id="expedition-map" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);min-height:300px;background:var(--card);">
-        <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>
-      </div>
-    </div>`;
-
 
 async function renderExpeditionMap(cities) {
   const container = document.getElementById('expedition-map');
