@@ -3947,11 +3947,114 @@ async function renderExpeditionDetail(id) {
   const main = document.getElementById('main');
   main.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">Loading...</div>';
 
-  const [{ data: exp }, { data: cities }] = await Promise.all([
+  await loadAllStats();
+  const [{ data: exp }, { data: expCities }] = await Promise.all([
     sb.from('expeditions').select('*').eq('id', id).single(),
     sb.from('expedition_cities').select('*').eq('expedition_id', id).order('sort_order'),
   ]);
-  await loadAllStats();
+
+  if (!exp) { main.innerHTML = '<div class="empty-state"><div class="es-icon">🧭</div><div class="es-text">Expedition not found.</div></div>'; return; }
+
+  // Enrich cities with coords from cities table
+  const cityIds = (expCities || []).map(c => c.city_id).filter(Boolean);
+  let cityCoords = {};
+  if (cityIds.length) {
+    const { data: cityRows } = await sb.from('cities').select('id, latitude, longitude').in('id', cityIds);
+    (cityRows || []).forEach(c => { cityCoords[c.id] = { lat: c.latitude, lng: c.longitude }; });
+  }
+  const cities = (expCities || []).map(c => ({
+    ...c,
+    latitude: c.latitude || cityCoords[c.city_id]?.lat,
+    longitude: c.longitude || cityCoords[c.city_id]?.lng,
+  }));
+
+  const meta = EXPEDITION_STATUS[exp.status] || EXPEDITION_STATUS.idea;
+  updateBreadcrumb({ expedition: exp });
+  window._currentExpedition = exp;
+  window._expeditionCities = cities;
+
+  main.innerHTML = `
+    <div class="back-btn" onclick="goExpeditions()">‹ Back to Expeditions</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:var(--text);">${exp.name}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+          <span style="background:${meta.color};color:#fff;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;">${meta.icon} ${meta.label}</span>
+          ${exp.estimated_start ? `<span style="font-size:12px;color:var(--muted);">📅 ${exp.estimated_start}${exp.estimated_end ? ' → ' + exp.estimated_end : ''}</span>` : ''}
+          ${exp.actual_start ? `<span style="font-size:12px;color:var(--muted);">✈️ ${exp.actual_start}${exp.actual_end ? ' → ' + exp.actual_end : ''}</span>` : ''}
+        </div>
+      </div>
+      <div class="admin-only" style="display:flex;gap:8px;">
+        <button onclick="openExpeditionForm(${exp.id})" style="padding:8px 14px;font-size:12px;font-weight:600;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--muted);cursor:pointer;">✏️ Edit</button>
+        <button onclick="deleteExpedition(${exp.id})" style="padding:8px 14px;font-size:12px;font-weight:600;border:1.5px solid #fca5a5;border-radius:8px;background:var(--card);color:#d03030;cursor:pointer;">🗑 Delete</button>
+      </div>
+    </div>
+
+    ${exp.description ? `<div style="font-size:14px;line-height:1.8;color:var(--text);margin-bottom:20px;padding:18px;background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:justify;">${exp.description}</div>` : ''}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);">📍 Route — ${cities.length} cities</div>
+          <button class="admin-only" onclick="openAddCityForm(${exp.id})" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;">+ Add City</button>
+        </div>
+        <div id="expedition-cities-list" style="max-height:400px;overflow-y:auto;">
+          ${cities.length ? cities.map((c, i) => {
+            const cs = cityStats[c.city_id] || {};
+            return `<div class="exp-city-row" data-id="${c.id}" draggable="true"
+              style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:grab;">
+              <span class="admin-only" style="color:var(--muted);font-size:16px;cursor:grab;">⠿</span>
+              <span style="font-size:11px;color:var(--muted);width:18px;text-align:center;font-weight:700;">${i+1}</span>
+              <div style="flex:1;cursor:pointer;" onclick="navigateToCity(null,${c.city_id})">
+                <div style="font-size:13px;font-weight:700;color:var(--blue);">${c.city_name} <span style="font-size:11px;font-weight:400;color:var(--muted);">${c.country_name || ''}</span></div>
+                <div style="display:flex;gap:8px;margin-top:2px;">
+                  ${cs.hmTotal > 0 ? `<span style="font-size:10px;color:var(--run);">🏅 ${cs.hm}/${cs.hmTotal}</span>` : ''}
+                  ${cs.pkTotal > 0 ? `<span style="font-size:10px;color:var(--parkrun);">🏃 ${cs.pk}/${cs.pkTotal}</span>` : ''}
+                </div>
+              </div>
+              <button class="admin-only" onclick="removeExpeditionCity(${c.id},${exp.id})" style="background:none;border:none;cursor:pointer;color:#d03030;font-size:12px;">🗑</button>
+            </div>`;
+          }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">No cities yet — add cities to build your route</div>'}
+        </div>
+      </div>
+      <div id="expedition-map" style="border-radius:12px;overflow:hidden;border:1px solid var(--border);min-height:350px;"></div>
+    </div>`;
+
+  initExpeditionDragSort(exp.id);
+  renderExpeditionMap(cities);
+}
+
+function initExpeditionDragSort(expeditionId) {
+  const list = document.getElementById('expedition-cities-list');
+  if (!list || !isAdmin()) return;
+  let dragging = null;
+
+  list.querySelectorAll('.exp-city-row').forEach(row => {
+    row.addEventListener('dragstart', e => {
+      dragging = row;
+      row.style.opacity = '0.4';
+    });
+    row.addEventListener('dragend', async e => {
+      row.style.opacity = '1';
+      // Save new order
+      const rows = [...list.querySelectorAll('.exp-city-row')];
+      await Promise.all(rows.map((r, i) =>
+        sb.from('expedition_cities').update({ sort_order: i }).eq('id', parseInt(r.dataset.id))
+      ));
+      renderExpeditionMap(window._expeditionCities || []);
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      const after = row.getBoundingClientRect().top + row.offsetHeight / 2 < e.clientY;
+      list.insertBefore(dragging, after ? row.nextSibling : row);
+      // Update numbers
+      list.querySelectorAll('.exp-city-row').forEach((r, i) => {
+        const num = r.querySelector('span:nth-child(2)');
+        if (num) num.textContent = i + 1;
+      });
+    });
+  });
+}
 
   if (!exp) { main.innerHTML = '<div class="empty-state"><div class="es-icon">🧭</div><div class="es-text">Expedition not found.</div></div>'; return; }
 
@@ -4009,9 +4112,6 @@ async function renderExpeditionDetail(id) {
       </div>
     </div>`;
 
-  window._currentExpedition = exp;
-  renderExpeditionMap(cities || []);
-}
 
 async function renderExpeditionMap(cities) {
   const container = document.getElementById('expedition-map');
@@ -4535,6 +4635,7 @@ async function render() {
         <button class="home-tab" onclick="setHomeTab(this,'cities')">🏙️ Cities</button>
         <button class="home-tab" onclick="setHomeTab(this,'halfmarathons')">🏅 Half Marathons</button>
         <button class="home-tab" onclick="setHomeTab(this,'parkruns')">🏃 Parkruns</button>
+        <button class="home-tab" onclick="goExpeditions()" style="color:#8b5cf6;border-color:#8b5cf6;">🧭 Expeditions</button>
       </div>
 
       <div id="home-tab-content" style="display:flex;flex-direction:column;gap:10px;">
