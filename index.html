@@ -1712,10 +1712,10 @@ let parkrunLocationsCache = {};
 let statsLoaded = false;
 let statsLoadingPromise = null;
 let cityStats = {};
-// A city counts as visited if the manual `visited` flag is set OR it has a completed half marathon / parkrun
+// A city counts as visited if the manual `visited` flag is set OR it has a completed half marathon, parkrun or visited tourism entry
 function isCityVisited(city) {
   const cs = cityStats[city.id];
-  return !!(city.visited || (cs && (cs.visited || cs.hm > 0 || cs.pk > 0)));
+  return !!(city.visited || (cs && (cs.visited || cs.hm > 0 || cs.pk > 0 || cs.tourism > 0)));
 }
 let countryStats = {};
 let regionStats = {};
@@ -3505,7 +3505,7 @@ function setHomeTab(btn, tab) {
         <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Loading map...</div>
       </div>
       <div style="display:flex;align-items:center;gap:16px;margin-top:8px;font-size:12px;color:var(--muted);">
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#16a34a;display:inline-block;"></span>Half Marathon done</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#16a34a;display:inline-block;"></span>Visited</span>
         <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#e1e0d9;border:0.5px solid #c3c2b7;display:inline-block;"></span>Not yet</span>
       </div>`;
     loadStatesMap('AU');
@@ -4269,6 +4269,10 @@ async function submitExpeditionForm(id) {
         const { data: cityRows } = await sb.from('cities').select('country_id').in('id', cityIds);
         const countryIds = [...new Set((cityRows || []).map(c => c.country_id).filter(Boolean))];
         if (countryIds.length) await sb.from('countries').update({ visited: true }).in('id', countryIds);
+        // Invalidate caches so counters and maps pick up the new visited flags
+        statsLoaded = false;
+        countriesCache = null;
+        loadHeaderStats();
       }
     }
   } else {
@@ -4388,7 +4392,7 @@ async function loadHeaderStats() {
     sb.from('parkrun_results').select('location_id'),
     sb.from('half_marathon_races').select('id, city_id'),
     sb.from('half_marathon_results').select('race_id'),
-    sb.from('tourism_entries').select('city_id')
+    sb.from('tourism_entries').select('city_id, visit_date')
   ]);
 
   function setStatBox(prefix, total, done) {
@@ -4415,6 +4419,7 @@ async function loadHeaderStats() {
   (pkLocations||[]).forEach(l => { if (pkDoneLocIds.has(l.id)) workedOnCityIds.add(l.city_id); });
   (hmRaces||[]).forEach(r => { if (hmDoneRaceIds.has(r.id)) workedOnCityIds.add(r.city_id); });
   (allCities||[]).forEach(c => { if (c.visited) workedOnCityIds.add(c.id); });
+  (tourismEntries||[]).forEach(t => { if (t.visit_date) workedOnCityIds.add(t.city_id); });
   setStatBox('cities', (allCities||[]).length, workedOnCityIds.size);
 
   const visitedCountryIds = new Set(
