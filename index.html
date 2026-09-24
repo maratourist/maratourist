@@ -1712,6 +1712,11 @@ let parkrunLocationsCache = {};
 let statsLoaded = false;
 let statsLoadingPromise = null;
 let cityStats = {};
+// A city counts as visited if the manual `visited` flag is set OR it has a completed half marathon / parkrun
+function isCityVisited(city) {
+  const cs = cityStats[city.id];
+  return !!(city.visited || (cs && (cs.visited || cs.hm > 0 || cs.pk > 0)));
+}
 let countryStats = {};
 let regionStats = {};
 
@@ -1773,7 +1778,7 @@ async function loadAllStats() {
       { data: allResults },
       { data: allTourism }
     ] = await Promise.all([
-      sb.from('cities').select('id, name, country_id, state, population, cover_photo, description, latitude, longitude'),
+      sb.from('cities').select('id, name, country_id, state, population, cover_photo, description, latitude, longitude, visited'),
       sb.from('half_marathon_races').select('id, city_id'),
       sb.from('parkrun_locations').select('id, city_id'),
       sb.from('parkrun_results').select('location_id'),
@@ -1819,7 +1824,8 @@ async function loadAllStats() {
         pk: pkDonePerCity[c.id] || 0,
         pkTotal: pkLocPerCity[c.id] || 0,
         tourism: tDone,
-        tourismTotal: tourismPerCity[c.id] || 0
+        tourismTotal: tourismPerCity[c.id] || 0,
+        visited: !!c.visited
       };
     });
 
@@ -1827,7 +1833,7 @@ async function loadAllStats() {
       const cid = c.country_id;
       if (!countryStats[cid]) countryStats[cid] = { hm:0, hmTotal:0, pk:0, pkTotal:0, cities:0, citiesVisited:0, tourism:0, tourismTotal:0 };
       const cs = cityStats[c.id];
-      const cityVisited = cs.hm > 0 || cs.pk > 0 || cs.tourism > 0;
+      const cityVisited = cs.visited || cs.hm > 0 || cs.pk > 0 || cs.tourism > 0;
       if (cityVisited) countryStats[cid].citiesVisited += 1;
       countryStats[cid].cities   += 1;
       countryStats[cid].hm       += cs.hm;
@@ -2748,7 +2754,7 @@ async function renderAllCities() {
   await loadAllStats();
 
   const { data: allCities } = await sb.from('cities')
-    .select('id, name, state, population, country_id, countries(id, name, flag_emoji)')
+    .select('id, name, state, population, country_id, visited, countries(id, name, flag_emoji)')
     .order('name');
 
   if (!allCities?.length) {
@@ -2819,14 +2825,14 @@ function renderCitiesGrid(allCities) {
 
     // Sort states: most visited first, then by total city count desc
     const sortedStates = Object.entries(states).sort((a, b) => {
-      const visA = a[1].filter(c => { const cs = cityStats[c.id]; return cs && (cs.hm > 0 || cs.pk > 0); }).length;
-      const visB = b[1].filter(c => { const cs = cityStats[c.id]; return cs && (cs.hm > 0 || cs.pk > 0); }).length;
+      const visA = a[1].filter(isCityVisited).length;
+      const visB = b[1].filter(isCityVisited).length;
       if (visB !== visA) return visB - visA;
       return b[1].length - a[1].length;
     });
 
     sortedStates.forEach(([state, stateCities]) => {
-      const visitedCount = stateCities.filter(c => { const cs = cityStats[c.id]; return cs && (cs.hm > 0 || cs.pk > 0); }).length;
+      const visitedCount = stateCities.filter(isCityVisited).length;
 
       // Sort cities by population desc
       stateCities.sort((a, b) => (b.population || 0) - (a.population || 0));
@@ -2839,8 +2845,7 @@ function renderCitiesGrid(allCities) {
       html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,140px);gap:8px;">`;
 
       stateCities.forEach(city => {
-        const cs = cityStats[city.id];
-        const visited = (c.visited) || (cs && (cs.hm > 0 || cs.pk > 0));
+        const visited = isCityVisited(city);
         const pop = city.population ? 'Pop. ' + city.population.toLocaleString() : '';
         const countryId = city.countries?.id;
         const bg    = visited ? '#16a34a' : 'var(--card)';
@@ -3552,22 +3557,34 @@ async function loadStatesMap(country) {
     });
   }
 
-  // Get states with HM done
-  const { data: hmResults } = await sb.from('half_marathon_results').select('race_id');
-  const { data: hmRaces }   = await sb.from('half_marathon_races').select('id, city_id');
-  const raceMap = Object.fromEntries((hmRaces||[]).map(r => [r.id, r]));
-  const cityIds = [...new Set((hmResults||[]).map(r => raceMap[r.race_id]?.city_id).filter(Boolean))];
+  // States count as done if they have at least one visited city:
+  // manual `visited` flag, a completed half marathon, or a completed parkrun
+  const [
+    { data: hmResults }, { data: hmRaces },
+    { data: pkResults }, { data: pkLocs },
+    { data: cities }, { data: countries }
+  ] = await Promise.all([
+    sb.from('half_marathon_results').select('race_id'),
+    sb.from('half_marathon_races').select('id, city_id'),
+    sb.from('parkrun_results').select('location_id'),
+    sb.from('parkrun_locations').select('id, city_id'),
+    sb.from('cities').select('id, state, country_id, visited'),
+    sb.from('countries').select('id, name')
+  ]);
 
+  const hmRaceMap = Object.fromEntries((hmRaces||[]).map(r => [r.id, r]));
+  const pkLocMap  = Object.fromEntries((pkLocs||[]).map(l => [l.id, l]));
+  const activeCityIds = new Set([
+    ...(hmResults||[]).map(r => hmRaceMap[r.race_id]?.city_id),
+    ...(pkResults||[]).map(r => pkLocMap[r.location_id]?.city_id)
+  ].filter(Boolean));
+
+  const countryName = country === 'AU' ? 'Australia' : 'Brazil';
+  const countryId = countries?.find(c => c.name === countryName)?.id;
   const doneStates = new Set();
-  if (cityIds.length > 0) {
-    const { data: cities } = await sb.from('cities').select('id, state, country_id');
-    // Get country id for AU/BR
-    const { data: countries } = await sb.from('countries').select('id, name');
-    const countryName = country === 'AU' ? 'Australia' : 'Brazil';
-    const countryId = countries?.find(c => c.name === countryName)?.id;
-    cities?.filter(c => cityIds.includes(c.id) && c.country_id === countryId && c.state)
-           .forEach(c => doneStates.add(c.state));
-  }
+  (cities||[])
+    .filter(c => c.country_id === countryId && c.state && (c.visited || activeCityIds.has(c.id)))
+    .forEach(c => doneStates.add(c.state));
 
   // GeoJSON sources
   const geoUrl = country === 'AU'
@@ -4366,7 +4383,7 @@ async function loadHeaderStats() {
     { data: tourismEntries }
   ] = await Promise.all([
     sb.from('countries').select('id, visited, map_id'),
-    sb.from('cities').select('id, country_id, cover_photo, description'),
+    sb.from('cities').select('id, country_id, cover_photo, description, visited'),
     sb.from('parkrun_locations').select('id, city_id'),
     sb.from('parkrun_results').select('location_id'),
     sb.from('half_marathon_races').select('id, city_id'),
@@ -4397,6 +4414,7 @@ async function loadHeaderStats() {
   const workedOnCityIds = new Set();
   (pkLocations||[]).forEach(l => { if (pkDoneLocIds.has(l.id)) workedOnCityIds.add(l.city_id); });
   (hmRaces||[]).forEach(r => { if (hmDoneRaceIds.has(r.id)) workedOnCityIds.add(r.city_id); });
+  (allCities||[]).forEach(c => { if (c.visited) workedOnCityIds.add(c.id); });
   setStatBox('cities', (allCities||[]).length, workedOnCityIds.size);
 
   const visitedCountryIds = new Set(
@@ -4791,7 +4809,7 @@ async function render() {
           const cs = cityStats[city.id] || { hm: 0, hmTotal: 0, pk: 0, pkTotal: 0, tourism: 0 };
           const totalDone = (cs.hm||0) + (cs.pk||0) + (cs.tourism||0);
           const allDone = (cs.hmTotal||0)+(cs.pkTotal||0) > 0 && cs.hm === cs.hmTotal && cs.pk === cs.pkTotal;
-          const isWorkedOn = (cs.pk > 0 || cs.hm > 0);
+          const isWorkedOn = isCityVisited(city);
           const rowBg = isWorkedOn ? 'background:#d4f5e4;' : '';
           const dot = isWorkedOn
             ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;margin-right:6px;flex-shrink:0;"></span>'
@@ -4837,7 +4855,7 @@ async function render() {
           + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
           + '<span style="font-size:18px;">' + stateIcon + '</span>'
           + '<span style="font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:700;">' + label + '</span>'
-          + '<span style="color:var(--muted);font-size:13px;">(' + stateCities.length + ' ' + (stateCities.length===1?'city':'cities') + ')</span>'
+          + '<span style="color:var(--muted);font-size:13px;">(' + stateCities.length + ' ' + (stateCities.length===1?'city':'cities') + ' · ' + stateCities.filter(isCityVisited).length + ' visited)</span>'
           + '</div>'
           + '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);">'
           + '<table style="width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed;">'
