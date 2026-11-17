@@ -1434,21 +1434,21 @@
     <div class="sidebar-title">⚡ Personal Records</div>
     <div class="pr-item">
       <div class="pr-dist">1 km</div>
-      <div class="pr-time">4:36</div>
-      <div class="pr-meta">4:36/km · 2026</div>
-      <div class="pr-location">Harris Avenue Parkrun</div>
+      <div class="pr-time">4:20</div>
+      <div class="pr-meta">4:20/km · 2026</div>
+      <div class="pr-location">Robina Parkrun</div>
     </div>
     <div class="pr-item">
       <div class="pr-dist">1 Mile</div>
-      <div class="pr-time">7:30</div>
-      <div class="pr-meta">4:40/km · 2026</div>
-      <div class="pr-location">Harris Avenue Parkrun</div>
+      <div class="pr-time">7:07</div>
+      <div class="pr-meta">4:25/km · 2026</div>
+      <div class="pr-location">Robina Parkrun</div>
     </div>
     <div class="pr-item">
       <div class="pr-dist">5 km</div>
-      <div class="pr-time">23:53</div>
-      <div class="pr-meta">4:46/km · 2026</div>
-      <div class="pr-location">Harris Avenue Parkrun</div>
+      <div class="pr-time">22:54</div>
+      <div class="pr-meta">4:35/km · 2026</div>
+      <div class="pr-location">Robina Parkrun</div>
     </div>
     <div class="pr-item">
       <div class="pr-dist">10 km</div>
@@ -1472,7 +1472,6 @@
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
       <button onclick="goGlobalHalfMarathons()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--run)';this.style.color='var(--run)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏅 All Half Marathons</button>
       <button onclick="goGlobalParkruns()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--parkrun)';this.style.color='var(--parkrun)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🏃 All Parkruns</button>
-      <button onclick="goExpeditions()" style="width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.15s;" onmouseover="this.style.borderColor='#8b5cf6';this.style.color='#8b5cf6'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🧭 Expeditions</button>
     </div>
     <div id="sidebar-regions" style="display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px;">Regions</div>
@@ -2974,17 +2973,17 @@ let pkCurrentFilters = { country: '', city: '', state: '', status: '' };
 // ════════════════════════════════════════
 const PR_DATA = {
   records: [
-    { dist: '1 km',          time: '4:36',    pace: '4:36/km', year: 2026, event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
-    { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', year: 2026, event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
-    { dist: '5 km',          time: '23:53',   pace: '4:46/km', year: 2026, event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
+    { dist: '1 km',          time: '4:20',    pace: '4:20/km', year: 2026, event: 'Robina Parkrun',                     city: 'Gold Coast, AU' },
+    { dist: '1 Mile',        time: '7:07',    pace: '4:25/km', year: 2026, event: 'Robina Parkrun',                     city: 'Gold Coast, AU' },
+    { dist: '5 km',          time: '22:54',   pace: '4:35/km', year: 2026, event: 'Robina Parkrun',                     city: 'Gold Coast, AU' },
     { dist: '10 km',         time: '49:57',   pace: '4:59/km', year: 2026, event: 'Jetty to Jetty',                    city: 'Brisbane, AU' },
     { dist: 'Half Marathon', time: '2:01:24', pace: '5:45/km', year: 2026, event: 'Coffs Harbour Half Marathon', city: 'Coffs Harbour, AU' },
   ],
   seasonBests: {
     2026: [
-      { dist: '1 km',          time: '4:36',    pace: '4:36/km', event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
-      { dist: '1 Mile',        time: '7:30',    pace: '4:40/km', event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
-      { dist: '5 km',          time: '23:53',   pace: '4:46/km', event: 'Harris Avenue Parkrun',              city: 'Brisbane, AU' },
+      { dist: '1 km',          time: '4:20',    pace: '4:20/km', event: 'Robina Parkrun',                     city: 'Gold Coast, AU' },
+      { dist: '1 Mile',        time: '7:07',    pace: '4:25/km', event: 'Robina Parkrun',                     city: 'Gold Coast, AU' },
+      { dist: '5 km',          time: '22:54',   pace: '4:35/km', event: 'Robina Parkrun',                     city: 'Gold Coast, AU' },
       { dist: '10 km',         time: '49:57',   pace: '4:59/km', event: 'Jetty to Jetty',                    city: 'Brisbane, AU' },
       { dist: 'Half Marathon', time: '2:01:24', pace: '5:45/km', event: 'Coffs Harbour Half Marathon',       city: 'Coffs Harbour, AU' },
     ],
@@ -3547,34 +3546,22 @@ async function loadStatesMap(country) {
     });
   }
 
-  // States count as done if they have at least one visited city:
-  // manual `visited` flag, a completed half marathon, or a completed parkrun
-  const [
-    { data: hmResults }, { data: hmRaces },
-    { data: pkResults }, { data: pkLocs },
-    { data: cities }, { data: countries }
-  ] = await Promise.all([
-    sb.from('half_marathon_results').select('race_id'),
-    sb.from('half_marathon_races').select('id, city_id'),
-    sb.from('parkrun_results').select('location_id'),
-    sb.from('parkrun_locations').select('id, city_id'),
-    sb.from('cities').select('id, state, country_id, visited'),
-    sb.from('countries').select('id, name')
-  ]);
+  // Get states with HM done
+  const { data: hmResults } = await sb.from('half_marathon_results').select('race_id');
+  const { data: hmRaces }   = await sb.from('half_marathon_races').select('id, city_id');
+  const raceMap = Object.fromEntries((hmRaces||[]).map(r => [r.id, r]));
+  const cityIds = [...new Set((hmResults||[]).map(r => raceMap[r.race_id]?.city_id).filter(Boolean))];
 
-  const hmRaceMap = Object.fromEntries((hmRaces||[]).map(r => [r.id, r]));
-  const pkLocMap  = Object.fromEntries((pkLocs||[]).map(l => [l.id, l]));
-  const activeCityIds = new Set([
-    ...(hmResults||[]).map(r => hmRaceMap[r.race_id]?.city_id),
-    ...(pkResults||[]).map(r => pkLocMap[r.location_id]?.city_id)
-  ].filter(Boolean));
-
-  const countryName = country === 'AU' ? 'Australia' : 'Brazil';
-  const countryId = countries?.find(c => c.name === countryName)?.id;
   const doneStates = new Set();
-  (cities||[])
-    .filter(c => c.country_id === countryId && c.state && (c.visited || activeCityIds.has(c.id)))
-    .forEach(c => doneStates.add(c.state));
+  if (cityIds.length > 0) {
+    const { data: cities } = await sb.from('cities').select('id, state, country_id');
+    // Get country id for AU/BR
+    const { data: countries } = await sb.from('countries').select('id, name');
+    const countryName = country === 'AU' ? 'Australia' : 'Brazil';
+    const countryId = countries?.find(c => c.name === countryName)?.id;
+    cities?.filter(c => cityIds.includes(c.id) && c.country_id === countryId && c.state)
+           .forEach(c => doneStates.add(c.state));
+  }
 
   // GeoJSON sources
   const geoUrl = country === 'AU'
@@ -4714,7 +4701,6 @@ async function render() {
         <button class="home-tab" onclick="setHomeTab(this,'cities')">🏙️ Cities</button>
         <button class="home-tab" onclick="setHomeTab(this,'halfmarathons')">🏅 Half Marathons</button>
         <button class="home-tab" onclick="setHomeTab(this,'parkruns')">🏃 Parkruns</button>
-        <button class="home-tab" onclick="goExpeditions()">🧭 Expeditions</button>
       </div>
 
       <div id="home-tab-content" style="display:flex;flex-direction:column;gap:10px;">
