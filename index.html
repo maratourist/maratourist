@@ -5683,12 +5683,66 @@ function openParkrunLocationForm(cityId) {
           📍 ${city ? city.name + (city.state ? ' · ' + city.state : '') : 'Unknown city'}
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Coordinates (optional)</label>
+        <div style="display:flex;gap:8px;">
+          <input class="form-input" id="loc-coords" placeholder="e.g. -28.0773, 153.3872" style="flex:1;">
+          <button type="button" class="btn-cancel" id="loc-find-btn" onclick="findParkrunCoords(${cityId})">🔍 Find</button>
+        </div>
+        <div id="loc-coords-hint" style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4;">
+          Click Find to search by name, or paste from Google Maps (right-click the start area, then click the numbers to copy). Without coordinates the parkrun won't show on the maps.
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
       <button class="btn-primary" id="loc-save-btn" onclick="submitParkrunLocationForm(${cityId})">Save Location</button>
     </div>
   `);
+}
+
+// Accepts "-28.0773, 153.3872" (as copied from Google Maps) and returns { lat, lng } or null
+function parseCoords(str) {
+  const m = /^\s*(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(str || '');
+  if (!m) return null;
+  const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return { lat, lng };
+}
+
+// Looks the parkrun up on OpenStreetMap (Nominatim) and fills the coordinates field
+async function findParkrunCoords(cityId) {
+  const nameEl = document.getElementById('loc-name');
+  const coordsEl = document.getElementById('loc-coords');
+  const hintEl = document.getElementById('loc-coords-hint');
+  const btn = document.getElementById('loc-find-btn');
+  const city = findCityById(cityId);
+  const base = nameEl.value.trim().replace(/\s*parkrun\s*$/i, '');
+  if (!base) { hintEl.textContent = 'Type the parkrun name first.'; return; }
+  const country = (countriesCache || []).find(c => c.id === (city && city.country_id));
+  const attempts = [
+    [base + ' parkrun', city && city.name, city && city.state, country && country.name],
+    [base, city && city.name, city && city.state, country && country.name]
+  ].map(a => a.filter(Boolean).join(', '));
+
+  btn.disabled = true; btn.textContent = 'Searching...';
+  hintEl.textContent = 'Searching OpenStreetMap...';
+  try {
+    for (const q of attempts) {
+      const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
+      const data = await res.json();
+      if (data && data[0]) {
+        coordsEl.value = parseFloat(data[0].lat).toFixed(6) + ', ' + parseFloat(data[0].lon).toFixed(6);
+        hintEl.textContent = 'Found: ' + data[0].display_name + ' — check it looks right, or paste exact coordinates from Google Maps.';
+        return;
+      }
+    }
+    hintEl.textContent = 'Nothing found for that name. Paste the coordinates from Google Maps instead (right-click the spot, then click the numbers to copy).';
+  } catch (e) {
+    hintEl.textContent = 'Search failed. Paste the coordinates from Google Maps instead.';
+  } finally {
+    btn.disabled = false; btn.textContent = '🔍 Find';
+  }
 }
 
 async function submitParkrunLocationForm(cityId) {
@@ -5703,13 +5757,21 @@ async function submitParkrunLocationForm(cityId) {
     return;
   }
 
+  const coordsRaw = document.getElementById('loc-coords').value.trim();
+  const coords = coordsRaw ? parseCoords(coordsRaw) : null;
+  if (coordsRaw && !coords) {
+    errorEl.innerHTML = `<div class="form-error">Coordinates must look like: -28.0773, 153.3872</div>`;
+    return;
+  }
+
   btn.disabled = true;
   btn.textContent = 'Saving...';
 
   const { error } = await sb.from('parkrun_locations').insert({
     city_id: cityId,
     name: name,
-    state: city ? (city.state || null) : null
+    state: city ? (city.state || null) : null,
+    ...(coords ? { latitude: coords.lat, longitude: coords.lng } : {})
   });
 
   if (error) {
